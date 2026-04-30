@@ -1,14 +1,15 @@
 # Knowledge Manifest — Monthly HR Capital Reporter
 
-This manifest lists the five files to upload to the GPT Builder Knowledge section.
+This manifest lists the six files to upload to the GPT Builder Knowledge section.
 
 | Order | File | Purpose | Required |
 |-------|------|---------|----------|
-| 1 | `knowledge/headcount-schema-dictionary.md` | Governance header + data-field schema validation | Yes |
+| 1 | `knowledge/headcount-schema-dictionary.md` | Governance header + data-field schema validation; Parse-First Metadata Scan; Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | Yes |
 | 2 | `knowledge/analytical-formulas.md` | Hiring gap, comp-per-head, budget burn, pacing | Yes |
 | 3 | `knowledge/executive-report-template.md` | Canonical 4-section report skeleton (template v2.0) | Yes |
 | 4 | `knowledge/anomaly-detection-rules.md` | Section 4 anomaly checks | Yes |
 | 5 | `knowledge/compliance-pii-guardrails.md` | Small-department suppression + governance metadata | Yes |
+| 6 | `knowledge/code-generation-templates.md` | Codegen Export Mode templates: Power Query M / Pandas / DuckDB / R / Office Scripts / VBA | Yes |
 
 ## Upload Procedure
 
@@ -34,6 +35,15 @@ Run these tests in the GPT Builder preview pane after upload:
 11. **No-file precondition test** — Ask for "this month's report" with no file attached. Expected: the GPT halts and asks for a `.xlsx`/`.csv` file rather than producing a templated report on imagined data.
 12. **Pasted-numbers refusal test** — Paste a small headcount table directly into the chat. Expected: refusal to report on pasted text; request for an attached file.
 13. **Non-canonical-headers halt test** — Upload a file whose headers do not match any canonical name **without** an Alias map. Expected: the GPT halts, names the missing canonical fields, and requests a Column Alias map rather than guessing.
+14. **Parse-First scan integrity test** — Upload a file with an unexpected sheet name. Expected: the GPT reports the actual sheet name and headers from its parse-first scan and asks the user to confirm the target sheet before loading the dataframe.
+15. **Question Mode (text + Logic) test** — After uploading a file, ask: "Which department has the largest MoM hiring gap?" without requesting code. Expected: a one-to-three-sentence text answer with concrete numbers and a `**Logic:**` block citing canonical fields, the formula reference, filters/scope, and a one-line pandas snippet — not the full templated report.
+16. **Codegen Export (Pandas) test** — Ask: "Export the Department Snapshot as Python." Expected: the standard envelope (`Generated for:`, `Language:`, `Setup notes:`, code block, `Logic:`); the code uses `pd.read_excel(... usecols=[<literal column names>], engine="openpyxl")` with the literal sheet name; no placeholders.
+17. **Codegen Export (Power Query M) test** — Ask: "Give me the M code that produces the Budget & Anomalies table." Expected: an M `let … in` block with a `DynamicPath` named-range setup note, `Table.PromoteHeaders`, and `Table.SelectColumns(..., MissingField.UseNull)`.
+18. **Codegen Export (DuckDB SQL) test** — Ask: "Convert this report to DuckDB for a 200k-row file." Expected: `INSTALL excel; LOAD excel;` plus a `read_xlsx(..., sheet = '<name>', all_varchar = true)` query selecting the literal column names.
+19. **Codegen Export (R) test** — Ask: "Give me the R version with dplyr." Expected: `library(readxl)` + `library(dplyr)`; `read_excel()` piped into `select(<literal column names>)`.
+20. **Codegen Export (Office Scripts) test** — Ask: "Give me the Office Script (TypeScript) version." Expected: `function main(workbook: ExcelScript.Workbook)` body using `getColumnByName(...).getRangeBetweenHeaderAndTotal()` + `copyFrom(..., ExcelScript.RangeCopyType.values, false, false)`.
+21. **Codegen Export (VBA) test** — Ask: "Now as a VBA macro." Expected: `Sub` using `.Find(What:=..., LookAt:=xlWhole)`, `xlUp` for last-row, `Application.ScreenUpdating = False/True` bracketing.
+22. **Anti-placeholder test** — In any Codegen test above, scan the emitted code for strings like `<insert ... here>`, `TODO`, `your_path`, or `column_name`. Expected: zero matches.
 
 ## Refresh Cadence
 
@@ -44,3 +54,4 @@ Run these tests in the GPT Builder preview pane after upload:
 | `executive-report-template.md` | Quarterly review with executive consumers. **Treat changes as versioned (v1 → v2) to preserve cross-period comparability.** |
 | `anomaly-detection-rules.md` | First 6 months: monthly. Then quarterly. |
 | `compliance-pii-guardrails.md` | Annually or regulatory change. |
+| `code-generation-templates.md` | When a target library or API ships a breaking change (DuckDB excel-extension version bump, Excel JS API revision, Pandas engine deprecation). Quarterly review otherwise. |

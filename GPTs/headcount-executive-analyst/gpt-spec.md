@@ -30,12 +30,26 @@ See `system-instructions.md` (copy-paste directly into the GPT Builder Instructi
 
 Character count target: under 8000. Behavioral rules and workflow live in Instructions; reference data lives in Knowledge files.
 
+## Response Modes
+
+The GPT operates in two complementary modes; intent comes from the user's prompt.
+
+| Mode | Trigger | Output shape |
+|---|---|---|
+| **Question Mode** (default) | Any analytical question that does not explicitly ask for code. | Text answer + a `**Logic:**` block (fields used, formula reference from `analytical-formulas.md`, filters/scope, one-line pandas snippet). Markdown table only when comparing ≥3 entities. |
+| **Codegen Export Mode** | Explicit request like "export as Python", "give me the M code", "as DuckDB SQL", "VBA macro", "Office Script", "as R". | Copy-paste-ready code per `knowledge/code-generation-templates.md`, with the literal sheet name and column names from the Parse-First Metadata Scan injected. No placeholders. Defaults to Pandas if the language is unspecified. |
+
+Behind both modes sits a **Parse-First Metadata Scan** (low-memory `openpyxl read_only=True`) that captures the workbook's sheets, headers, dtypes, and a 3-row sample before any full ingest — so every answer and every emitted code block is anchored to the user's actual file. See `knowledge/headcount-schema-dictionary.md` § *Parse-First Metadata Scan*.
+
 ## Conversation Starters
 
 1. "Reconcile this department headcount file — show plan vs actual, attrition impact, and budget burn."
 2. "Which departments are most behind their hiring plan, and by how much?"
 3. "Flag every anomaly: governance, plan-vs-actual, comp/budget, and attrition outliers."
 4. "Compare comp-per-head across departments and surface the outliers — Z-score basis."
+5. "Export this reconciliation as Python (Pandas) — copy-paste-ready, no placeholders."
+6. "Give me the Power Query M that produces the hiring-gap table, with a dynamic file path."
+7. "Generate the VBA macro that extracts Department, Current Headcount, and Total Compensation Costs into a fresh sheet."
 
 ## Knowledge Files
 
@@ -43,10 +57,11 @@ Character count target: under 8000. Behavioral rules and workflow live in Instru
 
 | # | File Name | Format | Purpose | Size Est. |
 |---|-----------|--------|---------|-----------|
-| 1 | headcount-schema-dictionary.md | MD | Governance header + data-field schema definitions | ~3 KB |
+| 1 | headcount-schema-dictionary.md | MD | Governance header + data-field schema, Parse-First Metadata Scan, Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | ~7 KB |
 | 2 | analytical-formulas.md | MD | Hiring gap, fill rate, comp-per-head, budget burn, pacing, composite risk | ~4 KB |
 | 3 | anomaly-detection-rules.md | MD | Governance / plan-vs-actual / comp-budget / attrition / data-quality rules | ~5 KB |
 | 4 | compliance-pii-guardrails.md | MD | Small-department suppression, governance-name handling, demographic guardrails | ~3 KB |
+| 5 | code-generation-templates.md | MD | Codegen Export Mode templates: Power Query M, Pandas, DuckDB, R, Office Scripts (TS), VBA — with safeguards and an output envelope | ~9 KB |
 
 ### File Details
 
@@ -70,6 +85,11 @@ Character count target: under 8000. Behavioral rules and workflow live in Instru
 - **Purpose:** Hard rules for handling governance-header names and small-department aggregates.
 - **Content:** Treatment of `Prepared by` / `Approved by`, small-department suppression (n<5), demographic-bias avoidance, regulatory alignment notes.
 - **Update Frequency:** Annually or whenever applicable regulations change.
+
+#### 5. code-generation-templates.md
+- **Purpose:** Library of copy-paste-ready code skeletons emitted only in Codegen Export Mode (when the user explicitly asks for code).
+- **Content:** Routing heuristic (which language to suggest); Power Query M (with dynamic-path + `MissingField.UseNull`), Pandas (`usecols=` + `engine="openpyxl"`), DuckDB (`read_xlsx` + `all_varchar=true`), R (`readxl` + `dplyr::select`), Office Scripts (`getColumnByName` + `copyFrom`), VBA (`.Find` + `xlUp`); anti-patterns the GPT must refuse; the standard output envelope.
+- **Update Frequency:** When upstream API or library changes occur (e.g., new DuckDB extension version, new Excel JS API).
 
 ## Recommended Model
 

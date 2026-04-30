@@ -15,6 +15,71 @@ These four fields appear above the data table and document who owns the file:
 
 Validation: if `Date Approved < Date Prepared`, the file is unsigned-off — flag it and refuse to publish executive output until approval is recorded.
 
+## Parse-First Metadata Scan
+
+Before loading the full dataframe, the GPT runs a **low-memory metadata scan** to enumerate the workbook's structure without paying the cost of a full ingest. This is the *parse first, reason second* discipline — read the map of the file before walking the territory. The scan answers four questions: what sheets exist, what headers are on each sheet, what dtypes do the first few rows imply, and where does the data actually start (i.e., are there title or merged-header rows above row 1).
+
+### Scan procedure (Code Interpreter)
+
+Use `openpyxl` in `read_only=True` mode (or `python-calamine` if available) so headers are streamed without loading the workbook into RAM:
+
+```python
+import openpyxl
+
+wb = openpyxl.load_workbook("<FILE_NAME>.xlsx", read_only=True, data_only=True)
+
+scan = {}
+for sheet_name in wb.sheetnames:
+    ws = wb[sheet_name]
+    headers = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), ())
+    sample  = []
+    for i, row in enumerate(ws.iter_rows(min_row=2, max_row=4, values_only=True)):
+        sample.append(row)
+        if i >= 2:
+            break
+    scan[sheet_name] = {
+        "headers": [h for h in headers],
+        "sample":  sample,
+    }
+wb.close()
+```
+
+For CSV inputs, the equivalent is `pandas.read_csv(path, nrows=3)` — same idea, no full read.
+
+### Internal context shape
+
+Once the scan completes, the GPT injects the result into its own reasoning as an XML-tagged context block. This is internal scaffolding (not shown to the user verbatim) but it is the source of truth that downstream steps — schema validation, alias resolution, codegen — rely on:
+
+```xml
+<workbook>
+  <sheet name="Q3_Financial_Data">
+    <headers>Department, Current Headcount, Planned Headcount, …</headers>
+    <inferred_dtypes>str, int, int, int, float, float, str, str, float</inferred_dtypes>
+    <sample_row>Engineering, 30, 35, 5, 0.12, 3500000.0, "Software Engineer, DevOps", "Q1-Q3 2024", 4200000.0</sample_row>
+  </sheet>
+</workbook>
+```
+
+### Decisions the scan unblocks
+
+The scan must complete before the GPT does any of the following:
+- **Schema validation** — compare scanned headers against the canonical field list above. Any mismatch is the trigger for requesting a Column Alias map (see § *Optional User-Supplied Inputs* below).
+- **Sheet selection** — confirm the expected sheet exists; if multiple sheets, ask the user which one (do not guess).
+- **Header-row detection** — if row 1 contains merged corporate banners or a title, locate the true header row and pass `skip=N` (R) / `header=N` (Pandas) / `Table.Skip` (Power Query) accordingly.
+- **Codegen target injection** — the literal sheet name and column names emitted in any code-generation export (see `code-generation-templates.md`) are pulled from this scan, never invented.
+
+### When the scan must halt
+
+| Condition | Action |
+|---|---|
+| File is not `.xlsx` or `.csv` | Halt with: *"Only Excel (`.xlsx`) and CSV files are supported. Please re-export and re-attach."* |
+| Workbook is password-protected | Halt; ask the user to remove protection or supply the password out-of-band. |
+| All sheets are empty | Halt with the list of empty sheets and the file's reported row count. |
+| Header row is empty (every cell None) | Halt; ask whether a title row needs to be skipped or whether the file has no header. |
+| Inferred row count exceeds the GPT's per-run safe ceiling (default 250,000 rows) | Recommend the DuckDB codegen path rather than full Pandas ingest; ask the user to confirm before proceeding. |
+
+The scan results are recorded in the run's "Caveats" / "Files used" section so the user can audit what the GPT saw before it committed to any analysis.
+
 ## Optional User-Supplied Inputs
 
 The uploader may attach any of three optional inputs alongside the data file. When provided, apply them **before** schema validation and analysis.

@@ -30,12 +30,27 @@ See `system-instructions.md` (copy-paste directly into the GPT Builder Instructi
 
 Character count target: under 8000. Behavioral framing patterns and longer narrative templates live in the Knowledge files.
 
+## Response Modes
+
+The Strategist's primary deliverable is the strategic brief. It also fields ad-hoc questions and emits export code on request.
+
+| Mode | Trigger | Output shape |
+|---|---|---|
+| **Strategic Brief Mode** (primary) | "Brief me", "what should the board worry about", "run a workforce analysis", or any prompt asking for synthesis. | The 4-section brief (Executive Headline → Top Risks → Top Opportunities → Decisions Required) per the Workflow, with implication-led framing per `knowledge/strategic-narrative-frameworks.md`. |
+| **Question Mode** | Ad-hoc question that does not warrant a full brief. | Implication-led text answer + `**Logic:**` block (fields used, formula reference, filters/scope, one-line pandas snippet). Markdown table only when comparing ≥3 entities. |
+| **Codegen Export Mode** | "Export this analysis as Python", "give me the M code that produces the risk roll-up", "as DuckDB SQL", "VBA macro", "Office Script", "as R". | Copy-paste-ready code per `knowledge/code-generation-templates.md`, with the literal sheet name and column names from the Parse-First Metadata Scan injected. No placeholders. Defaults to Pandas if unspecified. |
+
+Behind all three modes sits a **Parse-First Metadata Scan** (low-memory `openpyxl read_only=True`) that captures the workbook's sheets, headers, dtypes, and a 3-row sample before any full ingest — strategic conclusions on misidentified columns can mislead the board, so the scan is the source of truth. See `knowledge/headcount-schema-dictionary.md` § *Parse-First Metadata Scan*.
+
 ## Conversation Starters
 
 1. "What strategic risks does our current plan-vs-actual headcount picture expose us to?"
 2. "Brief me on departments where attrition and under-hiring are compounding — should the board worry?"
 3. "Tell the story behind this month's hiring pacing — which departments are slipping their timeline?"
 4. "Where is comp spend out of line with headcount share, and what should we do about it?"
+5. "Export the compounding-risk roll-up as Pandas — copy-paste-ready, no placeholders."
+6. "Give me the Power Query M that produces the risk-by-parent-department table with a refreshable file path."
+7. "Generate the DuckDB SQL that ranks departments by composite risk for a 250k-row file."
 
 ## Knowledge Files
 
@@ -43,11 +58,12 @@ Character count target: under 8000. Behavioral framing patterns and longer narra
 
 | # | File Name | Format | Purpose | Size Est. |
 |---|-----------|--------|---------|-----------|
-| 1 | headcount-schema-dictionary.md | MD | Governance header + data-field schema | ~3 KB |
+| 1 | headcount-schema-dictionary.md | MD | Governance header + data-field schema, Parse-First Metadata Scan, Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | ~7 KB |
 | 2 | analytical-formulas.md | MD | Hiring gap, comp-per-head, budget burn, pacing, composite risk | ~4 KB |
 | 3 | strategic-narrative-frameworks.md | MD | Risk/opportunity framing patterns for plan-execution data | ~4 KB |
 | 4 | anomaly-detection-rules.md | MD | Anomalies surfaced as strategic risks | ~5 KB |
 | 5 | compliance-pii-guardrails.md | MD | Small-department suppression + governance-name handling | ~3 KB |
+| 6 | code-generation-templates.md | MD | Codegen Export Mode templates: Power Query M, Pandas, DuckDB, R, Office Scripts (TS), VBA — with safeguards and an output envelope | ~9 KB |
 
 ### File Details
 
@@ -71,6 +87,11 @@ Character count target: under 8000. Behavioral framing patterns and longer narra
 #### 5. compliance-pii-guardrails.md
 - **Purpose:** Hard rules for governance-header names, small departments, and bias avoidance.
 - **Update Frequency:** Annually or upon regulatory change.
+
+#### 6. code-generation-templates.md
+- **Purpose:** Library of copy-paste-ready code skeletons emitted only in Codegen Export Mode (when the user explicitly asks for code that reproduces a brief's risk roll-up or a specific extraction).
+- **Content:** Routing heuristic; Power Query M (with dynamic-path + `MissingField.UseNull`), Pandas (`usecols=` + `engine="openpyxl"`), DuckDB (`read_xlsx` + `all_varchar=true`), R (`readxl` + `dplyr::select`), Office Scripts (`getColumnByName` + `copyFrom`), VBA (`.Find` + `xlUp`); anti-patterns the GPT must refuse; the standard output envelope.
+- **Update Frequency:** When upstream API or library changes occur.
 
 ## Recommended Model
 
