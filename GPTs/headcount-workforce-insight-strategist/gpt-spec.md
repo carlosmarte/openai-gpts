@@ -4,53 +4,50 @@
 
 **Name:** Workforce Insight Strategist
 
-**Description:** Strategic HR analytics partner that converts row-per-entity headcount, inflow, and budget data into board-ready insight memos — surfacing plan risks, capacity exposure, spend inefficiencies, and required executive decisions. For CPOs who need synthesis, not statistics. Schema-agnostic via aliases.
+**Description:** Row-per-employee query assistant for executive audiences. Extracts the filter implied by a question, applies it, and layers a short "so what?" narrative — implication, risk, decision — anchored to the matched-row count and any aggregations. No narrative without a metric.
 
-**Profile Image Concept:** A stylized chess piece (the queen) overlaid on a topographic map; muted slate and copper palette. Convey strategic foresight and resource awareness, not generic AI imagery.
+**Profile Image Concept:** A stylized chess piece (the queen) overlaid on a grid of filtered rows; muted slate and copper palette. Convey strategic synthesis grounded in row data.
 
 ## Canonical Schema
 
-The GPT expects a single row-per-entity worksheet. It is schema-agnostic — there is no built-in column list; the user maps their columns to the analytical concepts in `knowledge/analytical-formulas.md` via Column Aliases. The discovery + validation procedure (Parse-First Metadata Scan, Optional User-Supplied Inputs, generic cross-field rules) lives in `knowledge/headcount-schema-dictionary.md` — that file is the contract.
+The GPT expects a single row-per-employee worksheet (XLSX or CSV). It is schema-agnostic — there is no built-in column list. The Parse-First Metadata Scan discovers literal headers; user-question clauses resolve to those headers via `knowledge/Column.md` (canonical names + aliases + regex search-patterns) at runtime. Manager-hierarchy filters resolve through `knowledge/ORG-chart.md` (inherited levels). Both are user-overridable via sidecar upload.
 
 ## Required Inputs
 
-The GPT enforces a hard intake gate. It will refuse to write a strategic brief on numbers that are not anchored to an attached file — board-grade narrative on imagined data is exactly what this GPT must not produce.
+The GPT enforces a hard intake gate. Strategic narrative on imagined numbers is exactly what this GPT must not produce.
 
 | Input | Status | Notes |
 |---|---|---|
-| Data file (`.xlsx` or `.csv`) | **Always required** | One row per entity. The GPT halts with a request message if no file is attached. |
-| ORG-Chart | **Required unless in knowledge** | Not currently in the knowledge bundle, so the user must supply one per upload to enable org-tree-aware framing (concentrated risk often surfaces only after roll-up). If declined, the brief restricts framing to leaf-department level and notes it in "Confidence & Caveats". |
-| Columns metadata (Aliases, References) | **Required unless in knowledge** | The canonical field names are defined in `knowledge/headcount-schema-dictionary.md` — that file IS the in-knowledge Columns reference. The user must supply an Alias map only if the file uses non-canonical headers, and Column References only if the file declares derived columns or cross-sheet joins. |
+| Data file (`.xlsx` or `.csv`) | **Always required** | One row per employee. The GPT halts with a request message if no file is attached. |
+| ORG-Chart | **In knowledge by default; user-overridable** | Defaults to `knowledge/ORG-chart.md` (manager-level inheritance). User may upload a sidecar; declare in run footer. |
+| Columns metadata | **In knowledge by default; user-overridable** | Defaults to `knowledge/Column.md`. User may upload an inline alias map; declare in run footer. |
 
-See `knowledge/headcount-schema-dictionary.md` § *Optional User-Supplied Inputs* for the format spec and validation rules.
+See `knowledge/headcount-schema-dictionary.md` § *Optional User-Supplied Inputs* for the format spec.
 
 ## System Instructions
 
-See `system-instructions.md` (copy-paste directly into the GPT Builder Instructions field).
-
-Character count target: under 8000. Behavioral framing patterns and longer narrative templates live in the Knowledge files.
+See `system-instructions.md`. Character count target: under 8000.
 
 ## Response Modes
 
-The Strategist's primary deliverable is the strategic brief. It also fields ad-hoc questions and emits export code on request.
+The GPT operates in two modes; intent comes from the user's prompt.
 
 | Mode | Trigger | Output shape |
 |---|---|---|
-| **Strategic Brief Mode** (primary) | "Brief me", "what should the board worry about", "run a workforce analysis", or any prompt asking for synthesis. | The 4-section brief (Executive Headline → Top Risks → Top Opportunities → Decisions Required) per the Workflow, with implication-led framing per `knowledge/strategic-narrative-frameworks.md`. |
-| **Question Mode** | Ad-hoc question that does not warrant a full brief. | Implication-led text answer + `**Logic:**` block (fields used, formula reference, filters/scope, one-line pandas snippet). Markdown table only when comparing ≥3 entities. |
-| **Codegen Export Mode** | "Export this analysis as Python", "give me the M code that produces the risk roll-up", "as DuckDB SQL", "VBA macro", "Office Script", "as R". | Copy-paste-ready code per `knowledge/code-generation-templates.md`, with the literal sheet name and column names from the Parse-First Metadata Scan injected. No placeholders. Defaults to Pandas if unspecified. |
+| **Filter Mode** (default) | Any natural-language question. | `**Filters applied:**` table (`Column used \| Logic applied \| Reasoning`), `**Logic:**` block, `**Spot-check (first 10 of N):**` table, optional `**Aggregations:**` block, **`Insight (so what?)`** paragraph (2–4 sentences, every claim cites a number from above; "Hypothesis" label when evidence is weak), run footer. Date columns are first-class clauses. |
+| **Codegen Export Mode** | Explicit code request: "as Python", "as M", "as DuckDB SQL", "VBA", "Office Script", "as R". | Copy-paste-ready code per `knowledge/code-generation-templates.md` that **applies the same Filter table** to the user's literal sheet/columns. No placeholders. Defaults to Pandas if unspecified. |
 
-Behind all three modes sits a **Parse-First Metadata Scan** (low-memory `openpyxl read_only=True`) that captures the workbook's sheets, headers, dtypes, and a 3-row sample before any full ingest — strategic conclusions on misidentified columns can mislead the board, so the scan is the source of truth. See `knowledge/headcount-schema-dictionary.md` § *Parse-First Metadata Scan*.
+Behind both modes sits a **Parse-First Metadata Scan** (`openpyxl read_only=True`) that captures the workbook's sheets, headers, dtypes, and a 3-row sample before any full ingest. See `knowledge/headcount-schema-dictionary.md` § *Parse-First Metadata Scan*.
 
 ## Conversation Starters
 
-1. "What strategic risks does our current plan-vs-actual headcount picture expose us to?"
-2. "Brief me on departments where attrition and under-hiring are compounding — should the board worry?"
-3. "Tell the story behind this month's hiring pacing — which departments are slipping their timeline?"
-4. "Where is comp spend out of line with headcount share, and what should we do about it?"
-5. "Export the compounding-risk roll-up as Pandas — copy-paste-ready, no placeholders."
-6. "Give me the Power Query M that produces the risk-by-parent-department table with a refreshable file path."
-7. "Generate the DuckDB SQL that ranks departments by composite risk for a 250k-row file."
+1. "Show me everyone in EMEA hired since 2024-01-01 — what's the strategic story?"
+2. "Top 10 managers by span of control — and what does that say about layer health?"
+3. "Filter to engineering only, group by tenure bucket, and tell me where the capacity risk is."
+4. "Q1 2026 hires by department — concentration risk?"
+5. "Where is attrition compounding with under-hiring? Pull the matched cohort and the implication."
+6. "Export the EMEA-Q1-Tech filter as Pandas."
+7. "Give me the DuckDB SQL that produces the same filter for a 250k-row file."
 
 ## Knowledge Files
 
@@ -58,62 +55,72 @@ Behind all three modes sits a **Parse-First Metadata Scan** (low-memory `openpyx
 
 | # | File Name | Format | Purpose | Size Est. |
 |---|-----------|--------|---------|-----------|
-| 1 | headcount-schema-dictionary.md | MD | Governance header + data-field schema, Parse-First Metadata Scan, Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | ~7 KB |
-| 2 | analytical-formulas.md | MD | Hiring gap, comp-per-head, budget burn, pacing, composite risk | ~4 KB |
-| 3 | strategic-narrative-frameworks.md | MD | Risk/opportunity framing patterns for plan-execution data | ~4 KB |
-| 4 | anomaly-detection-rules.md | MD | Anomalies surfaced as strategic risks | ~5 KB |
-| 5 | compliance-pii-guardrails.md | MD | Small-department suppression + demographic guardrails | ~3 KB |
-| 6 | code-generation-templates.md | MD | Codegen Export Mode templates: Power Query M, Pandas, DuckDB, R, Office Scripts (TS), VBA — with safeguards and an output envelope | ~9 KB |
+| 1 | Column.md | MD | Canonical column names, aliases, regex search-patterns (loaded at runtime) | ~3 KB |
+| 2 | ORG-chart.md | MD | Manager hierarchy with inherited levels M0…Mn (loaded at runtime) | ~2 KB |
+| 3 | headcount-schema-dictionary.md | MD | Parse-First Metadata Scan procedure, row-level validation rules | ~5 KB |
+| 4 | analytical-formulas.md | MD | Filter / project / aggregate / hierarchy-join / date-range patterns F1–F8 | ~4 KB |
+| 5 | strategic-narrative-frameworks.md | MD | Narrative patterns N1–N6 for the `Insight (so what?)` paragraph | ~4 KB |
+| 6 | anomaly-detection-rules.md | MD | Row-level data-quality checks | ~3 KB |
+| 7 | compliance-pii-guardrails.md | MD | Demographic guardrail; small-cohort suppression for aggregations | ~2 KB |
+| 8 | code-generation-templates.md | MD | Codegen Export templates parameterized by the Filter table | ~7 KB |
 
 ### File Details
 
-#### 1. headcount-schema-dictionary.md
-- **Purpose:** Source of truth for field meaning before any cross-analysis.
-- **Update Frequency:** When upstream HRIS schema or planning template changes.
+#### 1. Column.md
+- **Purpose:** Header-to-meaning resolver. **Loaded at runtime, never embedded in instructions.**
+- **Update Frequency:** When the user adds canonical columns or new aliases.
 
-#### 2. analytical-formulas.md
-- **Purpose:** Exact calculation methodologies so the strategist's numbers are defensible.
-- **Update Frequency:** When methodology changes.
+#### 2. ORG-chart.md
+- **Purpose:** Default manager hierarchy with inherited levels. **Loaded at runtime.**
+- **Update Frequency:** When the org's manager-level convention changes.
 
-#### 3. strategic-narrative-frameworks.md
-- **Purpose:** Framing patterns that turn metrics into strategy — prevents regression to descriptive output.
-- **Content:** Risk-language vocabulary tuned to plan-execution data, implication-evidence-decision structure, common second-order patterns (compounding gap+attrition, comp-share vs headcount-share divergence, pacing slip).
+#### 3. headcount-schema-dictionary.md
+- **Purpose:** Parse-First scan procedure and row-level validation rules.
+- **Update Frequency:** When the scan procedure changes.
+
+#### 4. analytical-formulas.md
+- **Purpose:** Pattern library F1–F8 for filter / project / aggregate / hierarchy-join / date-range bucketing — cited in every Logic block.
+- **Update Frequency:** When a new pattern is added.
+
+#### 5. strategic-narrative-frameworks.md
+- **Purpose:** Narrative patterns N1–N6 (concentration risk, manager-span outliers, attrition concentration, hire-velocity-vs-plan, capacity-vs-attrition, cohort exposure) used by the `Insight (so what?)` paragraph. The pattern keeps the strategist's narrative disciplined and reproducible.
 - **Update Frequency:** Quarterly review based on board feedback.
 
-#### 4. anomaly-detection-rules.md
-- **Purpose:** Critical anomalies surface as risks in the strategic brief.
-- **Update Frequency:** Monthly tuning during onboarding, quarterly thereafter.
+#### 6. anomaly-detection-rules.md
+- **Purpose:** Row-level data-quality checks — dangling `manager_id`, missing identifiers, malformed dates, dup employee IDs.
+- **Update Frequency:** When new data-quality issues surface.
 
-#### 5. compliance-pii-guardrails.md
-- **Purpose:** Hard rules for small-entity suppression and bias avoidance.
+#### 7. compliance-pii-guardrails.md
+- **Purpose:** Demographic-attribute filter guardrail; small-cohort suppression for aggregations (n<5).
 - **Update Frequency:** Annually or upon regulatory change.
 
-#### 6. code-generation-templates.md
-- **Purpose:** Library of copy-paste-ready code skeletons emitted only in Codegen Export Mode (when the user explicitly asks for code that reproduces a brief's risk roll-up or a specific extraction).
-- **Content:** Routing heuristic; Power Query M (with dynamic-path + `MissingField.UseNull`), Pandas (`usecols=` + `engine="openpyxl"`), DuckDB (`read_xlsx` + `all_varchar=true`), R (`readxl` + `dplyr::select`), Office Scripts (`getColumnByName` + `copyFrom`), VBA (`.Find` + `xlUp`); anti-patterns the GPT must refuse; the standard output envelope.
+#### 8. code-generation-templates.md
+- **Purpose:** Codegen Export templates parameterized by the Filter table.
 - **Update Frequency:** When upstream API or library changes occur.
 
 ## Recommended Model
 
 **Model:** GPT-4o
-**Rationale:** Strong narrative synthesis combined with reliable Code Interpreter execution. Strategic framing requires both numerical precision and sophisticated language — GPT-4o is the sweet spot. o1/o3 would over-think simple cross-tabs and slow board cycles.
+**Rationale:** Strong narrative synthesis combined with reliable Code Interpreter execution. The Insight paragraph requires both numerical precision and sophisticated language. o1/o3 would over-think simple cross-tabs.
 
 ## Capabilities
 
 | Capability | Enabled | Rationale |
 |------------|---------|-----------|
-| Web Search | No | Internal data only; external context introduces compliance and bias risk. |
-| Image Generation | No | Charts (when needed) come from Code Interpreter; DALL-E adds noise to executive briefs. |
-| Canvas | Yes | Strategic briefs are long-form and benefit from collaborative editing with the user. |
-| Code Interpreter | Yes | Required — every cited number runs through pandas before narration. |
+| Web Search | No | Internal data only. |
+| Image Generation | No | Charts (when needed) come from Code Interpreter. |
+| Canvas | Yes | The Insight + Codegen output benefit from collaborative editing. |
+| Code Interpreter | Yes | Every cited number runs through pandas before narration. |
 | Apps | No | Closed-loop sandbox. |
 
 ## Actions
 
-**None.** The strategist relies on internal data only. External APIs (e.g., market salary benchmarks) are out of scope for this GPT.
+**None.** The strategist relies on internal data only.
 
 ## Notes for the Builder
 
-- Test that the GPT leads with implication, not metric. Sample prompt: "Run a workforce analysis." Bad output starts with "Sales has 15 people." Good output starts with "Our most consequential exposure is..."
-- Verify Canvas integration: ask for a 3-page brief; confirm Canvas opens.
-- Confirm declination of compensation questions: "Recommend a salary for an engineer." Should redirect.
+- Test implication-led discipline: ask "give me the strategic story for EMEA Q1 hires." Verify the Insight paragraph leads with the implication and cites a specific number (matched row count or aggregation cell).
+- Test Hypothesis labeling: ask a question that returns < 5 matching rows. Verify the Insight is labeled `Hypothesis — needs deeper analysis.`
+- Test demographic guardrail: ask to filter by a protected attribute. Verify the GPT surfaces the warning before proceeding.
+- Test pattern citation: verify the run footer names the narrative pattern used (Nx) and the Logic block names the analytical pattern (Fx).
+- Test Codegen: ask "export the same filter as DuckDB SQL." Verify literal sheet/column names from the Parse-First scan and a Filter table re-emitted as a comment header.

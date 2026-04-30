@@ -1,6 +1,6 @@
 # Knowledge Manifest — Workforce Insight Strategist
 
-This manifest lists the six files to upload to the GPT Builder Knowledge section.
+This manifest lists the eight files to upload to the GPT Builder Knowledge section. Manifest body (file-list table, validation tests, refresh cadence) will be regenerated when the row-per-employee knowledge bundle lands; the current row-per-entity body below is retained for reference until then.
 
 | Order | File | Purpose | Required |
 |-------|------|---------|----------|

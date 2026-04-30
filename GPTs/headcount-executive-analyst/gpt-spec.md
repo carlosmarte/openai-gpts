@@ -4,23 +4,23 @@
 
 **Name:** Headcount Executive Analyst
 
-**Description:** Audit-grade analytics agent for row-per-entity headcount spreadsheets. Produces reconciled plan-vs-actual, spend-vs-budget, rate-impact, and pacing analyses with anomaly flags — every number traces back to a pandas operation. Schema-agnostic: users map columns to analytical concepts.
+**Description:** Row-per-employee query assistant. Extracts the filter implied by a natural-language question, applies it with pandas, and returns an auditable `Filters applied` table + a 10-row spot-check + any aggregations. The deliverable is the filter and the computation, not a templated report.
 
-**Profile Image Concept:** A minimalist navy-and-white shield with an upward-trending sparkline and a magnifying glass overlay; corporate, audit-firm aesthetic. Convey precision and trust, not playful or AI-cliché.
+**Profile Image Concept:** A minimalist navy-and-white shield with a magnifying-glass overlay focused on a single highlighted row of a spreadsheet grid; corporate audit-firm aesthetic. Convey precision and trust.
 
 ## Canonical Schema
 
-The GPT expects a single row-per-entity worksheet. It is schema-agnostic — there is no built-in column list; the user maps their columns to the analytical concepts in `knowledge/analytical-formulas.md` via Column Aliases. The discovery + validation procedure (Parse-First Metadata Scan, Optional User-Supplied Inputs, generic cross-field rules) lives in `knowledge/headcount-schema-dictionary.md` — that file is the contract.
+The GPT expects a single row-per-employee worksheet (XLSX or CSV). It is schema-agnostic — there is no built-in column list. The Parse-First Metadata Scan discovers literal headers; user-question clauses resolve to those headers via `knowledge/Column.md` (canonical names + aliases + regex search-patterns) at runtime. Manager-hierarchy filters resolve through `knowledge/ORG-chart.md` (inherited levels). Both are user-overridable via sidecar upload.
 
 ## Required Inputs
 
-The GPT enforces a hard intake gate. It will refuse to analyze numbers that are not anchored to an attached file.
+The GPT enforces a hard intake gate. It will refuse to operate on numbers that are not anchored to an attached file.
 
 | Input | Status | Notes |
 |---|---|---|
-| Data file (`.xlsx` or `.csv`) | **Always required** | One row per entity. The GPT halts with a request message if no file is attached. |
-| ORG-Chart | **Required unless in knowledge** | Not currently in the knowledge bundle, so the user must supply one per upload (JSON / YAML / CSV / sidecar sheet) to enable parent-level roll-ups. The user may explicitly opt out, in which case the analysis stays at leaf-department level. |
-| Columns metadata (Aliases, References) | **Required unless in knowledge** | The canonical field names are defined in `knowledge/headcount-schema-dictionary.md` — that file IS the in-knowledge Columns reference. The user must supply an Alias map only if the uploaded file uses non-canonical headers, and Column References only if the file declares derived columns or cross-sheet joins. |
+| Data file (`.xlsx` or `.csv`) | **Always required** | One row per employee. The GPT halts with a request message if no file is attached. |
+| ORG-Chart | **In knowledge by default; user-overridable** | Defaults to `knowledge/ORG-chart.md` (manager-level inheritance). User may upload a sidecar; declare in run footer. |
+| Columns metadata | **In knowledge by default; user-overridable** | Defaults to `knowledge/Column.md` (canonical names + aliases + regex search-patterns). User may upload an inline alias map; declare in run footer. |
 
 See `knowledge/headcount-schema-dictionary.md` § *Optional User-Supplied Inputs* for the format spec and validation rules.
 
@@ -28,28 +28,28 @@ See `knowledge/headcount-schema-dictionary.md` § *Optional User-Supplied Inputs
 
 See `system-instructions.md` (copy-paste directly into the GPT Builder Instructions field).
 
-Character count target: under 8000. Behavioral rules and workflow live in Instructions; reference data lives in Knowledge files.
+Character count target: under 8000.
 
 ## Response Modes
 
-The GPT operates in two complementary modes; intent comes from the user's prompt.
+The GPT operates in two modes; intent comes from the user's prompt.
 
 | Mode | Trigger | Output shape |
 |---|---|---|
-| **Question Mode** (default) | Any analytical question that does not explicitly ask for code. | Text answer + a `**Logic:**` block (fields used, formula reference from `analytical-formulas.md`, filters/scope, one-line pandas snippet). Markdown table only when comparing ≥3 entities. |
-| **Codegen Export Mode** | Explicit request like "export as Python", "give me the M code", "as DuckDB SQL", "VBA macro", "Office Script", "as R". | Copy-paste-ready code per `knowledge/code-generation-templates.md`, with the literal sheet name and column names from the Parse-First Metadata Scan injected. No placeholders. Defaults to Pandas if the language is unspecified. |
+| **Filter Mode** (default) | Any natural-language question. | `**Filters applied:**` table (`Column used \| Logic applied \| Reasoning (from question)`), `**Logic:**` block, `**Spot-check (first 10 of N):**` table, optional `**Aggregations:**` block, run footer. Date columns are first-class clauses. |
+| **Codegen Export Mode** | Explicit code request: "as Python", "as M", "as DuckDB SQL", "VBA", "Office Script", "as R". | Copy-paste-ready code per `knowledge/code-generation-templates.md` that **applies the same Filter table** to the user's literal sheet/columns. No placeholders. Defaults to Pandas if unspecified. |
 
-Behind both modes sits a **Parse-First Metadata Scan** (low-memory `openpyxl read_only=True`) that captures the workbook's sheets, headers, dtypes, and a 3-row sample before any full ingest — so every answer and every emitted code block is anchored to the user's actual file. See `knowledge/headcount-schema-dictionary.md` § *Parse-First Metadata Scan*.
+Behind both modes sits a **Parse-First Metadata Scan** (`openpyxl read_only=True`) that captures the workbook's sheets, headers, dtypes, and a 3-row sample before any full ingest. See `knowledge/headcount-schema-dictionary.md` § *Parse-First Metadata Scan*.
 
 ## Conversation Starters
 
-1. "Reconcile this department headcount file — show plan vs actual, attrition impact, and budget burn."
-2. "Which departments are most behind their hiring plan, and by how much?"
-3. "Flag every anomaly: plan-vs-actual, comp/budget, attrition, and data-quality outliers."
-4. "Compare comp-per-head across departments and surface the outliers — Z-score basis."
-5. "Export this reconciliation as Python (Pandas) — copy-paste-ready, no placeholders."
-6. "Give me the Power Query M that produces the hiring-gap table, with a dynamic file path."
-7. "Generate the VBA macro that extracts the entity_id, actual_count, and comp_spend columns from my file into a fresh sheet."
+1. "Show me everyone in EMEA hired since 2024-01-01."
+2. "List all managers at level ≥ M3 with span > 7 reports."
+3. "Filter to engineering org only — group by department, count of employees."
+4. "Headcount by region for hire_date in Q1 2026."
+5. "Top 10 by tenure in Tech department."
+6. "Export the EMEA-tenure-over-5y filter as Pandas."
+7. "Give me the DuckDB SQL for hire_date BETWEEN '2025-01-01' AND '2025-12-31' grouped by department."
 
 ## Knowledge Files
 
@@ -57,62 +57,68 @@ Behind both modes sits a **Parse-First Metadata Scan** (low-memory `openpyxl rea
 
 | # | File Name | Format | Purpose | Size Est. |
 |---|-----------|--------|---------|-----------|
-| 1 | headcount-schema-dictionary.md | MD | Data-field schema, Parse-First Metadata Scan, Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | ~7 KB |
-| 2 | analytical-formulas.md | MD | Hiring gap, fill rate, comp-per-head, budget burn, pacing, composite risk | ~4 KB |
-| 3 | anomaly-detection-rules.md | MD | Plan-vs-actual / comp-budget / attrition / data-quality / composite-risk rules | ~5 KB |
-| 4 | compliance-pii-guardrails.md | MD | Small-department suppression, demographic guardrails | ~3 KB |
-| 5 | code-generation-templates.md | MD | Codegen Export Mode templates: Power Query M, Pandas, DuckDB, R, Office Scripts (TS), VBA — with safeguards and an output envelope | ~9 KB |
+| 1 | Column.md | MD | Canonical column names, aliases, regex search-patterns (loaded at runtime) | ~3 KB |
+| 2 | ORG-chart.md | MD | Manager hierarchy with inherited levels M0…Mn (loaded at runtime) | ~2 KB |
+| 3 | headcount-schema-dictionary.md | MD | Parse-First Metadata Scan procedure, row-level validation rules | ~5 KB |
+| 4 | analytical-formulas.md | MD | Filter / project / aggregate / hierarchy-join / date-range patterns F1–F8 | ~4 KB |
+| 5 | anomaly-detection-rules.md | MD | Row-level data-quality checks (missing IDs, dangling manager_id, …) | ~3 KB |
+| 6 | compliance-pii-guardrails.md | MD | Demographic-attribute guardrail; small-cohort suppression for aggregations | ~2 KB |
+| 7 | code-generation-templates.md | MD | Codegen Export templates parameterized by the Filter table | ~7 KB |
 
 ### File Details
 
-#### 1. headcount-schema-dictionary.md
-- **Purpose:** Source of truth for what each data field means and how to interpret values.
-- **Content:** Data-field definitions, the Parse-First Metadata Scan procedure, Optional User-Supplied Inputs (ORG-Chart, Aliases, References), cross-field validation rules.
-- **Source:** Synthesized from the example file structure (one row per entity).
-- **Update Frequency:** Whenever the upstream HRIS export schema changes.
+#### 1. Column.md
+- **Purpose:** Header-to-meaning resolver. Maps the user's literal headers to canonical columns via aliases and regex search-patterns. **Loaded at runtime, never embedded in instructions.**
+- **Update Frequency:** When the user adds canonical columns or new aliases.
 
-#### 2. analytical-formulas.md
-- **Purpose:** Provide exact, copy-paste-ready calculation methodologies so the GPT does not invent formulas.
-- **Content:** Total org headcount, hiring gap, fill rate, net growth, comp-per-head, budget burn, attrition impact, pacing, concentration, period-over-period deltas, composite risk index.
-- **Update Frequency:** As needed when methodology changes.
+#### 2. ORG-chart.md
+- **Purpose:** Default manager hierarchy with inherited levels. Used for hierarchy-aware filters ("under VP X", "managers at level ≥ M3"). **Loaded at runtime.**
+- **Update Frequency:** When the org's manager-level convention changes.
 
-#### 3. anomaly-detection-rules.md
-- **Purpose:** Codify the anomaly detection logic so it runs consistently every report.
-- **Content:** Plan-vs-actual anomalies, comp/budget overruns, attrition outliers, data-quality issues, composite risk.
-- **Update Frequency:** Monthly tuning during the first 6 months, quarterly thereafter.
+#### 3. headcount-schema-dictionary.md
+- **Purpose:** Parse-First scan procedure (low-memory openpyxl pass) and row-level validation rules.
+- **Update Frequency:** When the scan procedure changes.
 
-#### 4. compliance-pii-guardrails.md
-- **Purpose:** Hard rules for handling small-entity aggregates and demographic-bias avoidance.
-- **Content:** Small-department suppression (n<5), demographic-bias avoidance, regulatory alignment notes.
-- **Update Frequency:** Annually or whenever applicable regulations change.
+#### 4. analytical-formulas.md
+- **Purpose:** Pattern library F1–F8 (filter / project / aggregate / hierarchy-join / date-range bucketing) — cited in every Logic block.
+- **Update Frequency:** When a new pattern is added.
 
-#### 5. code-generation-templates.md
-- **Purpose:** Library of copy-paste-ready code skeletons emitted only in Codegen Export Mode (when the user explicitly asks for code).
-- **Content:** Routing heuristic (which language to suggest); Power Query M (with dynamic-path + `MissingField.UseNull`), Pandas (`usecols=` + `engine="openpyxl"`), DuckDB (`read_xlsx` + `all_varchar=true`), R (`readxl` + `dplyr::select`), Office Scripts (`getColumnByName` + `copyFrom`), VBA (`.Find` + `xlUp`); anti-patterns the GPT must refuse; the standard output envelope.
-- **Update Frequency:** When upstream API or library changes occur (e.g., new DuckDB extension version, new Excel JS API).
+#### 5. anomaly-detection-rules.md
+- **Purpose:** Row-level data-quality checks — dangling `manager_id`, missing identifiers, malformed dates, dup `employee_id`.
+- **Update Frequency:** When new data-quality issues surface.
+
+#### 6. compliance-pii-guardrails.md
+- **Purpose:** Demographic-attribute filter guardrail; small-cohort suppression for aggregations (n<5).
+- **Update Frequency:** Annually or upon regulatory change.
+
+#### 7. code-generation-templates.md
+- **Purpose:** Codegen Export templates parameterized by the Filter table.
+- **Update Frequency:** When upstream API or library changes occur.
 
 ## Recommended Model
 
 **Model:** GPT-4o
-**Rationale:** Reliable Code Interpreter execution combined with strong instruction-following. The audit-grade tone needs precise adherence to formulas — o1/o3's chain-of-thought is overkill for tabular pandas work and slower for monthly cycles.
+**Rationale:** Reliable Code Interpreter for pandas filtering and strict instruction-following for the Filter table format. No deep reasoning required.
 
 ## Capabilities
 
 | Capability | Enabled | Rationale |
 |------------|---------|-----------|
-| Web Search | No | Internal HR data only; web access introduces compliance risk and is unnecessary for reconciliation. |
-| Image Generation | No | Charts come from Code Interpreter (matplotlib), not DALL-E. |
-| Canvas | No | Output is tabular and short-form; canvas adds friction for this workflow. |
-| Code Interpreter | Yes | Core requirement — pandas ingestion, plan-vs-actual math, anomaly detection, checksum validation. |
-| Apps | No | Keeps data inside the sandbox; no external connectors required. |
+| Web Search | No | Internal HR data only. |
+| Image Generation | No | Charts (when needed) come from Code Interpreter. |
+| Canvas | No | Output is short-form; Canvas adds friction. |
+| Code Interpreter | Yes | Required — every filter is computed via pandas. |
+| Apps | No | Closed-loop. |
 
 ## Actions
 
-**None.** External API calls would conflict with the zero-hallucination, defensible-numbers mandate. This GPT is a closed-loop tabular analyst.
+**None.** External API calls would conflict with the auditable, defensible-numbers mandate.
 
 ## Notes for the Builder
 
-- After uploading the five knowledge files, test with a sample row-per-entity dataset of your choosing (with a Column Alias map) before sharing.
-- Verify checksum behavior: introduce a row whose `comp_spend` is implausible vs `budget` and confirm the GPT flags Rule 2.1 (Budget overrun) or Rule 2.2 (Material budget slack).
-- Verify small-entity suppression: include an entity with `actual_count = 3` and confirm any spend-derived display is suppressed with `*`.
-- Verify schema-agnostic intake: upload the same dataset with non-canonical headers and an Alias map; confirm the GPT applies the aliases and produces identical results.
+- Test filter extraction: ask "show me everyone in EMEA hired since 2024-01-01" with a sample employee dataset. Verify the `Filters applied` table maps each clause to a literal header.
+- Test date filter: ask "headcount by region for hire_date in Q1 2026" — verify the date range expands to `>= '2026-01-01' AND < '2026-04-01'`.
+- Test ambiguity halt: upload a file whose headers don't resolve via `Column.md` and ask a question — verify the GPT halts and asks for an alias map.
+- Test ORG-chart override: upload a sidecar ORG-chart and a hierarchy-aware question — verify the run footer declares the override.
+- Test demographic guardrail: ask to filter by a protected attribute — verify the GPT surfaces the guardrail warning before proceeding.
+- Test code export: ask "export the same filter as Pandas" — verify the emitted code uses literal sheet/column names and the Filter table is re-emitted as a comment header.
