@@ -1,0 +1,99 @@
+Subject: Re: Re: CloudStack vs. NovaPlatform — Final Vendor Decision
+Date: February 28, 2025
+
+From: Priya Kapoor <p.kapoor@globalfinance.io>
+To: Marcus Webb <m.webb@globalfinance.io>, Anika Johansson <a.johansson@globalfinance.io>
+CC: Tom Bradley <t.bradley@globalfinance.io>, Procurement <procurement@globalfinance.io>
+
+Marcus, Anika —
+
+After reviewing both proposals and the security audit results, I'm going with CloudStack.
+
+Here's my rationale:
+- 40% cost savings over 3 years vs. NovaPlatform
+- SOC 2 Type II certified (NovaPlatform is Type I only)
+- Their migration support team has done 6 financial services migrations this year
+
+Marcus — I need you to finalize the contract redlines with Legal by March 7. Pay particular attention to the data residency clause in Section 8.3 — Legal flagged that our EU operations require explicit GDPR data processing terms that aren't in the current draft.
+
+Anika — please coordinate the technical migration plan with CloudStack's onboarding team. First milestone is a sandbox environment by March 14. I want to see a full migration timeline document by March 10.
+
+Tom — FYI on the decision. Can you update the Q1 budget forecast to reflect the CloudStack pricing? The annual commitment is $340K, paid quarterly.
+
+One thing I want to flag: CloudStack's SLA guarantees 99.95% uptime, but their actual track record last quarter was 99.91%. I've asked them to include penalty clauses for any month below 99.95%. Marcus, make sure that's in the redlines.
+
+We need to move fast — our current contract with LegacyHost expires April 15 and there's no extension option.
+
+— Priya
+
+> On February 27, 2025, Anika Johansson wrote:
+>
+> Priya,
+>
+> Finished the technical evaluation. Summary:
+>
+> CloudStack:
+> + Native Kubernetes support
+> + Built-in observability (Prometheus/Grafana stack)
+> + API-first architecture, good for our microservices migration
+> - Weaker documentation for custom networking configs
+> - Smaller support team (response times avg 4hrs vs. 1hr for Nova)
+>
+> NovaPlatform:
+> + Excellent documentation and 24/7 premium support
+> + Stronger networking features for our multi-region setup
+> - Requires custom middleware for K8s integration
+> - Higher base cost, and the "premium support" tier adds another 15%
+> - SOC 2 Type I only — they say Type II is "in progress" but no timeline
+>
+> My recommendation: CloudStack for the technical fit, but we need to negotiate better support
+> response times into the SLA. The 4-hour average is too slow for production incidents.
+>
+> I'm comfortable owning the migration planning if we go that route.
+>
+> — Anika
+>
+>> On February 25, 2025, Marcus Webb wrote:
+>>
+>> Team,
+>>
+>> I've completed the commercial analysis of both vendors. Key numbers:
+>>
+>> CloudStack: $340K/year, 3-year commitment, 10% discount for annual prepay
+>> NovaPlatform: $480K/year, 2-year minimum, premium support adds $72K/year
+>>
+>> CloudStack is significantly cheaper. However, NovaPlatform includes migration services
+>> in the base price while CloudStack charges $45K one-time for migration support.
+>>
+>> Even factoring in the migration fee, CloudStack saves us roughly $385K over 3 years.
+>>
+>> I've also flagged to Legal that both contracts have auto-renewal clauses we should
+>> negotiate out. Legal review is scheduled for next week.
+>>
+>> Should we schedule a decision meeting or are we ready to call it on email?
+>>
+>> Marcus Webb
+>> Senior Procurement Manager
+>> Global Finance Inc.
+>>
+>> On February 22, 2025, Priya Kapoor wrote:
+>>
+>> Hi team,
+>>
+>> We need to make a final call on our cloud infrastructure vendor by end of February.
+>> We've narrowed it down to CloudStack and NovaPlatform.
+>>
+>> Marcus — pull together the commercial comparison.
+>> Anika — finalize the technical evaluation.
+>>
+>> Let's resolve this on email if we can. Decision authority is mine but I want your
+>> full input before I commit.
+>>
+>> Context: our LegacyHost contract expires April 15 with no extension option,
+>> so we need migration underway by mid-March at the latest.
+>>
+>> — PK
+>>
+>> Priya Kapoor
+>> CTO, Global Finance Inc.
+>> Sent from my iPhone

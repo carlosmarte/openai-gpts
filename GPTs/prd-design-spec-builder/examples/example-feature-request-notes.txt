@@ -1,0 +1,36 @@
+FEATURE REQUEST — Bulk CSV Import for Contacts
+
+Source: Customer Success team, collected from 8 enterprise client requests over Q1 2025
+
+Problem:
+Enterprise clients onboarding to our platform need to import their existing contact lists. Currently they have to add contacts one by one through the UI or ask our support team to do a manual database import. Clients with 10,000+ contacts say this is a dealbreaker during trials.
+
+What clients described:
+- "I just want to upload a CSV and map columns to your fields"
+- "We need to import 50,000 contacts with custom fields and tags"
+- "The import should tell me which rows failed and why, not just silently skip them"
+- "We need to be able to undo an import if something went wrong"
+- "Our CSVs have duplicates — we need merge logic, not just skip or overwrite"
+
+Existing system context:
+- Contacts model has: name, email, phone, company, tags (array), custom_fields (JSON)
+- There's already a single-contact POST /api/v1/contacts endpoint
+- Max custom fields per account: 50
+- Current DB: PostgreSQL 15, largest account has ~200K contacts
+- We use Bull for job queues already
+
+What CS team wants:
+1. Self-service CSV upload in the UI
+2. Column mapping step (drag-drop or dropdown)
+3. Preview of first 10 rows after mapping
+4. Duplicate handling options: skip, overwrite, merge
+5. Import progress indicator
+6. Error report downloadable as CSV
+7. Ability to undo/rollback an import within 24 hours
+
+Technical considerations from eng (informal):
+- Need to handle files up to 500MB
+- Should be async — user uploads, gets notified when done
+- Rate limiting on the import to avoid overwhelming the DB
+- Custom field type validation (date, number, text, dropdown)
+- UTF-8 encoding issues are common with client CSVs

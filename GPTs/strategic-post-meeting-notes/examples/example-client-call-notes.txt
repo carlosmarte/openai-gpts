@@ -1,0 +1,29 @@
+Client Call — Meridian Health Systems (Enterprise Account)
+April 4, 2026 / 11:00 AM / 45 min / Zoom
+
+Our side: Rachel (Account Manager), Ben (Solutions Engineer)
+Client side: Dr. Patel (CIO), Karen (IT Director), Sam (Project Lead)
+
+---
+
+Context: Meridian is in month 3 of a 12-month enterprise contract. They're rolling out our platform across 12 hospital locations. Currently live at 3 locations.
+
+Dr. Patel opened saying rollout is behind schedule. Originally planned 6 locations by now. Main blocker is SSO integration — their IT team has been going back and forth with our support for 5 weeks on SAML configuration issues.
+
+Karen said the SAML setup guide we sent doesn't match their IdP (Okta with custom claims). She's sent 3 support tickets and gotten different answers each time. "We need one person who owns this and sees it through."
+
+Ben said he'd escalate internally and get a dedicated support engineer assigned by Monday.
+
+Sam talked about the dashboard customization. They need to add patient volume metrics that aren't in our standard reports. Ben said our API supports custom metrics but there's no UI for it yet — suggested they use our API + their internal BI tool as a workaround. Sam wasn't happy: "We're paying enterprise pricing and being told to build our own dashboards?"
+
+Dr. Patel asked about the roadmap for custom dashboards. Rachel said it's planned but couldn't commit to a date. Dr. Patel said he needs something concrete by end of month or he'll need to evaluate alternatives for the remaining 9 locations. "We can't roll out a platform that doesn't meet basic reporting needs."
+
+Rachel committed to getting a roadmap update from product by April 18.
+
+Other items:
+- Meridian wants to pilot our mobile app at 2 locations — Karen asked about MDM compatibility (they use Jamf). Ben will check and respond by Wednesday.
+- Sam mentioned they found a bug: exported CSV reports show timestamps in UTC instead of the hospital's local timezone. Ben confirmed it's a known issue, fix is in the next release (April 15).
+- Dr. Patel asked about HIPAA BAA status — said he was told it was signed but hasn't received a copy. Rachel will send it today.
+- Karen wants monthly check-in calls instead of quarterly. Rachel agreed, will send a recurring invite.
+
+Tone of the meeting was professional but clearly frustrated. Dr. Patel was diplomatic but the "evaluate alternatives" comment was a real signal. We need to show progress fast.

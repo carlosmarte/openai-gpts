@@ -1,0 +1,34 @@
+Team Standup — Engineering Pod Alpha
+April 7, 2026 / 9:15 AM / 15 min
+
+Attendees: Marcus (lead), Priya, James, Olivia, Nate
+
+Marcus:
+- Merged the caching PR yesterday, staging looks good
+- Going to start on the rate limiter today
+- Blocked on access to the Redis cluster in prod — asked DevOps on Thursday, no response yet
+
+Priya:
+- Still working on the search indexing migration
+- Found a bug where deleted records aren't being removed from the index
+- Thinks she can fix it by end of day but might need James to review the delete hook logic
+
+James:
+- Finished the API versioning headers
+- Wants to pair with Priya on the delete hook thing — said "maybe after lunch"
+- Has a dentist appointment Wednesday afternoon, will be out from 1pm
+
+Olivia:
+- Dashboard redesign is in review, waiting on Marcus to approve
+- Starting the notification preferences UI today
+- Asked if we're still planning to ship notifications in the April release or if it slipped — nobody had a clear answer
+
+Nate:
+- Wrapping up unit tests for the billing module
+- Should be done by tomorrow
+- Mentioned the test environment has been flaky since last week — "tests pass locally but fail in CI about 30% of the time"
+
+Other notes:
+- Marcus said we should do a retro on the last sprint — maybe Friday?
+- Someone mentioned the Q2 roadmap review is next Tuesday but nobody confirmed the time
+- Olivia suggested we create a shared doc tracking which features are confirmed for April release

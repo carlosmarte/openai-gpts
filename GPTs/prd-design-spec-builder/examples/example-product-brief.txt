@@ -1,0 +1,25 @@
+PRODUCT BRIEF — Internal Notification Hub
+
+Background:
+We currently send notifications through 3 separate systems — email (SendGrid), in-app (custom WebSocket), and Slack (webhook). Each team manages their own notification logic. There's no central place to see what was sent, no user preference management, and duplicate notifications are a recurring complaint from users.
+
+Goal:
+Build a unified notification service that all internal teams can use as a single API. Users should be able to set channel preferences (email, in-app, Slack, SMS). We need delivery tracking and a way to audit what was sent.
+
+Stakeholder Notes:
+- PM (Sarah): "Users keep asking for a notification center in the app — a single inbox."
+- Eng Lead (Jake): "We need to deprecate the 3 existing systems. Migration path is critical."
+- Support (Mia): "Top complaint is duplicate alerts. Second is no way to mute a specific type."
+- Security (Tom): "Notifications sometimes contain PII. We need to figure out data retention."
+
+Known Constraints:
+- Must integrate with existing auth (OAuth2 + JWT)
+- Current user base: ~15,000 internal employees
+- Budget for external services (Twilio for SMS) approved
+- Team: 2 backend engineers, 1 frontend, starting Q3
+
+Open Questions:
+- Do we support rich content (images, buttons) in notifications or text only?
+- What's the SLA for delivery latency?
+- Should the notification center be a standalone micro-frontend or embedded component?
+- How long do we retain notification history?

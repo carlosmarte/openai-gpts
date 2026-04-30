@@ -1,0 +1,113 @@
+Subject: Re: Re: Re: FY26 Data Infrastructure Budget — Approval Needed
+Date: March 20, 2025
+
+From: Catherine Liu <c.liu@novahealth.org>
+To: Dmitri Volkov <d.volkov@novahealth.org>
+CC: Finance Committee <fin-committee@novahealth.org>, Sandra Muñoz <s.munoz@novahealth.org>
+
+Dmitri,
+
+Approved with the amendments we discussed. Total budget: $2.1M for FY26.
+
+Breakdown:
+- Cloud infrastructure (AWS): $890K (down from your $950K ask — see below)
+- Data engineering headcount (2 FTEs): $420K
+- Snowflake license expansion: $310K
+- ML platform tooling (Databricks): $280K
+- Contingency/buffer: $200K
+
+I've cut $60K from the AWS line item. You mentioned the reserved instance savings should kick in by Q2 — I'm holding you to that. If the savings don't materialize by June 30, we'll need to revisit and pull from the contingency buffer.
+
+Sandra — please process the PO for the Snowflake expansion ASAP. Their current pricing expires March 31 and we lose the 15% volume discount if we miss it. Dmitri, make sure Sandra has the exact SKU list and seat count by March 24.
+
+Dmitri — for the two data engineering hires, I want to see job descriptions approved by HR before we post. Target: have both roles filled by June 1. Given the market, that's aggressive. Start the req process this week.
+
+RISK I'M FLAGGING: We're betting heavily on Databricks for the ML platform. If the pilot (due April 15) doesn't show clear ROI over our current Jupyter/Airflow setup, I will not approve the $280K line item for Q3 disbursement. You'll have until the April 30 review to make the case.
+
+One more thing — I noticed the proposal didn't include any budget for data governance tooling. With the new HIPAA audit requirements taking effect in July, we may need to add a line item for that. Let's discuss at the April finance review. Not blocking approval but flagging it now.
+
+— Catherine
+
+> On March 18, 2025, Dmitri Volkov wrote:
+>
+> Catherine,
+>
+> Thanks for the feedback. Updated proposal attached. Key changes:
+>
+> 1. Reduced AWS ask from $1.1M to $950K based on the reserved instance analysis
+>    I ran with the cloud team. We can save ~$150K annually by committing to 1-year
+>    reserved instances on our top 8 workloads. Savings start materializing in Q2.
+>
+> 2. Moved the Kafka managed service ($120K) out of this budget and into Platform
+>    team's budget per James's request. That simplifies our line items.
+>
+> 3. Added the Databricks pilot cost ($40K) as a separate line under ML tooling.
+>    Full year commitment is $280K but I'm structuring it so we only commit to $40K
+>    initially with the option to scale in Q3 pending pilot results.
+>
+> Total revised ask: $2.16M (down from original $2.4M).
+>
+> The Snowflake renewal is time-sensitive — their pricing offer expires March 31.
+> Sandra, can you fast-track the procurement approval? I'll send you the SKU details
+> tomorrow.
+>
+> Re: headcount — I know two data engineers is a big ask. But our current team of
+> three is running at 140% capacity. We've lost two people in the last 8 months and
+> the remaining team is burning out. Wei has already mentioned she's considering
+> other opportunities. If we lose her, the entire real-time pipeline is at risk
+> because she's the only one who understands the legacy Kafka setup.
+>
+> Happy to walk through the numbers in more detail if needed.
+>
+> — Dmitri
+>
+> Dmitri Volkov
+> Director of Data Engineering
+> Nova Health Systems
+>
+>> On March 15, 2025, Catherine Liu wrote:
+>>
+>> Dmitri,
+>>
+>> Reviewed your initial proposal. A few concerns:
+>>
+>> 1. The $1.1M AWS spend feels high. Have you looked at reserved instances or
+>>    savings plans? I need to see you've optimized before I approve that number.
+>>
+>> 2. I want the Databricks commitment structured as a pilot first. Don't ask me
+>>    for $280K on an unproven platform. Show me ROI.
+>>
+>> 3. The two headcount adds need stronger justification. What's the cost of NOT
+>>    hiring? Give me the risk scenario.
+>>
+>> Revised proposal by end of next week please.
+>>
+>> — CL
+>>
+>> Catherine Liu
+>> CFO, Nova Health Systems
+>>
+>>> On March 12, 2025, Dmitri Volkov wrote:
+>>>
+>>> Hi Catherine, Sandra,
+>>>
+>>> Submitting the FY26 data infrastructure budget proposal for review.
+>>>
+>>> We're requesting $2.4M total, broken down as:
+>>> - AWS cloud infrastructure: $1.1M
+>>> - Snowflake license expansion: $310K
+>>> - Databricks ML platform (new): $280K
+>>> - Kafka managed service migration: $120K
+>>> - Data engineering headcount (2 new FTEs): $420K
+>>> - Contingency: $170K
+>>>
+>>> This represents a 28% increase over FY25. The main drivers are:
+>>> - Data volume growth (3x YoY)
+>>> - New ML initiatives required by the product roadmap
+>>> - Critical staffing gaps
+>>>
+>>> Happy to schedule a walkthrough at your convenience.
+>>>
+>>> — Dmitri
+>>>
+>>> Sent from my iPhone

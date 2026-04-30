@@ -1,0 +1,38 @@
+Strategy Meeting — Q3 Platform Direction
+April 3, 2026 / 2:00 PM / 90 min / Conference Room B + Zoom
+
+Attendees: Dana (VP Product), Raj (CTO), Kenji (Eng Director), Lisa (Head of CS), Mike (Head of Sales), Anna (Design Lead)
+
+---
+
+Dana opened by saying Q2 numbers are tracking 12% below forecast. Main churn driver is enterprise clients leaving for competitors with better integrations. Need to decide: do we double down on our integration ecosystem or invest in the AI features clients keep asking about?
+
+Raj presented data:
+- 40% of churned accounts cited "missing integrations" in exit surveys
+- Top requested: Salesforce, HubSpot, Jira, Slack (we only have Slack today)
+- AI feature requests are growing but mostly from mid-market, not enterprise
+- Building a proper integration platform would take 2 engineers ~4 months
+- AI copilot MVP could ship in 6 weeks with the team we have
+
+Mike pushed hard for integrations: "Every deal I lose, integrations come up. AI is nice-to-have, integrations are table stakes." Said he has 3 enterprise prospects ($500K+ combined ARR) who are waiting on Salesforce integration specifically.
+
+Lisa agreed integrations are the priority. Said support tickets about missing integrations are up 35% QoQ.
+
+Kenji argued we could do both if we hire 2 more engineers, but Raj said headcount is frozen until August. Kenji then suggested we build a lightweight integration framework first (Zapier-style webhooks + OAuth connector pattern) that lets us ship connectors faster — estimated 6 weeks for the framework, then 1-2 weeks per connector.
+
+Anna raised a concern: "If we build integrations without rethinking the data model, we'll have the same mapping problems HubSpot has. We should invest a sprint in data modeling before we start building connectors."
+
+Dana's decision: Integrations are Q3 priority #1. AI copilot moves to Q4. She wants Kenji's framework approach but with Anna's data modeling sprint upfront.
+
+Action items people mentioned:
+- Kenji will write a technical design doc for the integration framework by next Friday
+- Anna will do a data model audit and propose changes — said she needs 2 weeks
+- Mike will get LOIs or written commitments from the 3 enterprise prospects to validate the investment
+- Lisa will compile the full list of requested integrations ranked by frequency
+- Raj will re-open the headcount conversation with finance for August — wants 2 backend engineers specifically
+- Dana wants a checkpoint meeting in 3 weeks to review Kenji and Anna's work before committing to build
+
+Other topics:
+- Mike mentioned a competitor (Acme Corp) just launched an AI assistant and it's getting buzz on LinkedIn — wants to make sure we don't fall too far behind
+- Lisa asked if we could do a webinar for existing clients about the integration roadmap to reduce churn proactively — Dana said good idea, Lisa should own it
+- Someone brought up that our API rate limits are too low for integration use cases — Raj said he'd look into it but no commitment on timeline

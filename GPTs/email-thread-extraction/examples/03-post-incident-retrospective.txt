@@ -1,0 +1,140 @@
+Subject: Re: Re: Re: Post-Mortem: March 5 Payment Processing Outage
+Date: March 10, 2025
+
+From: Raj Patel <r.patel@paystream.com>
+To: Engineering All-Hands <eng-all@paystream.com>
+CC: Christine Delacroix <c.delacroix@paystream.com>, Operations <ops@paystream.com>
+
+Everyone,
+
+Thanks for the candid feedback. Here's where I think we've landed on the retro. I want to close this thread out by EOD Wednesday (March 12) so we can move to execution.
+
+WHAT WENT WELL:
+- Nadia's monitoring alert caught the issue within 4 minutes — that's a huge improvement over the 45 minutes it took us last time
+- The war room process worked smoothly. Escalation to on-call was clean.
+- Customer comms went out within 30 minutes thanks to Derek and the support team
+
+WHAT NEEDS TO CHANGE:
+- We need circuit breakers on the payment gateway integration. Period. This has bitten us three times now.
+- The runbook for payment failures is outdated — it still references the old Stripe v2 API endpoints
+- We had no automated rollback. Elena had to manually revert the deployment at 3 AM.
+
+ACTION ITEMS:
+- Nadia: implement circuit breaker pattern on payment gateway by March 21. Use Hystrix or Resilience4j — your call on the library.
+- Derek: update the payment failure runbook by March 14. Get Elena to review since she dealt with the actual incident.
+- Elena: document the manual rollback steps she followed and spec out an automated rollback pipeline. Draft proposal by March 19, and I'll review.
+- Raj (me): schedule a resilience review with the platform team to audit other integration points. Targeting week of March 24.
+
+PARKING LOT (for later):
+- Should we evaluate a backup payment processor? Derek raised this and I think it's worth exploring, but it's a Q2 conversation at the earliest.
+- Nadia mentioned that our alerting thresholds might be too aggressive and causing alert fatigue on the overnight shift. Let's look at that in the next ops review.
+
+Christine — I know the board wants a formal incident report. I'll have that to you by March 17. The customer impact was ~2,300 failed transactions over 47 minutes, and we've confirmed all were automatically retried and completed once service restored.
+
+One risk I want to flag: Elena is the only person who knows the manual deployment rollback process. If she's unavailable during the next incident, we're in trouble. The automated rollback pipeline is the fix, but until then we need her to do a knowledge transfer with at least one other engineer. Elena, can you pair with Nadia on this by March 14?
+
+Let's not let this happen a fourth time.
+
+— Raj
+
+> On March 8, 2025, Elena Vasquez wrote:
+>
+> Raj,
+>
+> Adding my perspective from the trenches. I got paged at 2:47 AM and it took me about
+> 20 minutes to understand what was happening because the runbook pointed me to the wrong
+> API endpoints. I ended up having to read the raw deployment logs to figure out what to
+> revert.
+>
+> The manual rollback itself took 35 minutes because there's no script for it — I was
+> running kubectl commands by hand in production at 3 AM. That's not sustainable.
+>
+> Things that went well from my side:
+> - The monitoring dashboards were actually useful for once. Nadia's Grafana boards saved me.
+> - Sanjay from the platform team jumped on even though he wasn't on-call. Appreciated.
+>
+> Things that frustrated me:
+> - I've asked for automated rollback tooling twice in the last 6 months. Both times it got
+>   deprioritized for feature work. Can we please commit to it this time?
+> - The on-call handoff process is still confusing. I wasn't sure who owned what until Raj
+>   set up the war room.
+>
+> Not trying to point fingers, just want to make sure we actually fix things this time.
+>
+> — Elena
+>
+>> On March 7, 2025, Derek Okonkwo wrote:
+>>
+>> Hey all,
+>>
+>> From the customer-facing side:
+>>
+>> We had 147 support tickets come in during the 47-minute window. Our template response
+>> worked well — customers appreciated the proactive status page update.
+>>
+>> However, 23 enterprise clients reached out directly to their account managers wanting
+>> root cause details. We need a standard enterprise incident communication template.
+>> I can draft one if that would be helpful.
+>>
+>> Also — this is the third payment outage in 6 months. I'm starting to get questions from
+>> sales about whether we should have a backup payment processor. That feels like a bigger
+>> conversation but I wanted to flag it.
+>>
+>> The support team did great under pressure. Special callout to Mei who handled the
+>> enterprise escalations solo while I coordinated the status page.
+>>
+>> — Derek
+>>
+>>> On March 7, 2025, Nadia Kowalski wrote:
+>>>
+>>> Team,
+>>>
+>>> Here's my timeline from the monitoring side:
+>>>
+>>> - 2:43 AM: Payment success rate dropped below 95% threshold
+>>> - 2:47 AM: Automated alert fired to on-call (Elena)
+>>> - 2:52 AM: I saw the alert (I was already up) and started triaging
+>>> - 3:05 AM: Root cause identified — bad config pushed in deploy #4471
+>>> - 3:07 AM: War room opened by Raj
+>>> - 3:25 AM: Elena began manual rollback
+>>> - 3:30 AM: Service degraded to 60% success rate (lowest point)
+>>> - 3:42 AM: Rollback complete, success rate recovering
+>>> - 3:55 AM: Full recovery confirmed
+>>>
+>>> The alert fired fast — 4 minutes from anomaly detection. That's working.
+>>>
+>>> What's NOT working: our alerting thresholds. I've been getting paged for
+>>> transient dips that recover on their own. Last month I got 14 false-positive
+>>> pages on overnight shift. We need to tune the thresholds or add a cooldown
+>>> period before escalating.
+>>>
+>>> The Grafana dashboards I set up last sprint were critical for diagnosis. I'll
+>>> add a deployment correlation panel so we can immediately see if an issue
+>>> coincides with a recent deploy.
+>>>
+>>> — Nadia
+>>>
+>>>> On March 6, 2025, Raj Patel wrote:
+>>>>
+>>>> Team,
+>>>>
+>>>> Starting the post-mortem thread for the payment processing outage on March 5.
+>>>>
+>>>> As you know, we had a 47-minute outage starting at approximately 2:43 AM ET
+>>>> that affected payment processing. ~2,300 transactions failed before we
+>>>> rolled back.
+>>>>
+>>>> I'd like everyone involved to share:
+>>>> 1. Your timeline of events
+>>>> 2. What went well
+>>>> 3. What needs to change
+>>>> 4. Any action items you think we should commit to
+>>>>
+>>>> Let's keep this blameless and focused on improvement.
+>>>>
+>>>> — Raj
+>>>>
+>>>> Raj Patel
+>>>> Director of Engineering
+>>>> PayStream Inc.
+>>>> r.patel@paystream.com

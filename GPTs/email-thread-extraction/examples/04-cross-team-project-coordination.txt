@@ -1,0 +1,136 @@
+Subject: Re: Re: Re: Re: Customer Portal Redesign — Cross-Team Sync
+Date: March 18, 2025
+
+From: Angela Moretti <a.moretti@brighthorizon.com>
+To: Kevin Zhao <k.zhao@brighthorizon.com>, Yuki Tanaka <y.tanaka@brighthorizon.com>, Ben Osei <b.osei@brighthorizon.com>
+CC: Rachel Kim <r.kim@brighthorizon.com>, Design Team <design@brighthorizon.com>, QA <qa@brighthorizon.com>
+
+OK team, I think we have a path forward. Let me lay it out.
+
+DECISIONS:
+1. We're going with Option B — phased rollout starting with the dashboard module. Kevin's data convinced me. The 73% engagement stat on the dashboard makes it the highest-impact starting point.
+2. Design system migration will happen in parallel, not as a prerequisite. Yuki's team will update components as each module is redesigned rather than doing a big-bang migration.
+3. We'll use feature flags for the rollout. Ben, your team owns the flag infrastructure.
+
+TIMELINE:
+- Design mockups for dashboard module: due March 28 (Yuki)
+- Backend API updates for dashboard: due April 4 (Kevin)
+- Feature flag setup for phased rollout: due March 25 (Ben)
+- QA test plan for dashboard module: due April 7 (Rachel)
+- Dashboard module beta launch to 10% of users: April 14
+- Full dashboard rollout (if metrics hold): April 28
+- Next module (billing) design kickoff: April 21
+
+Kevin — one thing that worries me. You mentioned the dashboard API is still on the legacy REST endpoints. How much work is the GraphQL migration for just the dashboard queries? I need a realistic estimate by March 21 so we can decide whether to migrate now or wrap the old API.
+
+Yuki — for the design mockups, please include both desktop and mobile. Last redesign we forgot mobile until QA caught it, and that cost us two weeks. Also coordinate with Ben on the component library — I don't want duplicate work between your new designs and the existing system.
+
+Ben — the feature flag setup is the critical path item. If that slips, everything else slides. Can you confirm by EOD tomorrow that your team has capacity? If there's a conflict with the analytics sprint, let me know and I'll escalate to James.
+
+Rachel — I know QA is stretched thin right now with the mobile app release. Can you give me an honest assessment of whether April 7 is realistic for the test plan? I'd rather adjust now than be surprised later.
+
+OPEN QUESTION: Should we include the notification preferences panel in the dashboard module or treat it as a separate module? It's technically part of the dashboard but has its own backend service. Let's decide at Thursday's sync.
+
+Also parking this for later: Kevin suggested we build a real-time analytics dashboard for internal use using the same API. Great idea but definitely out of scope for this phase. Let's revisit in Q3 planning.
+
+— Angela
+
+> On March 17, 2025, Ben Osei wrote:
+>
+> Angela,
+>
+> Feature flags are doable on my end. I've been wanting to upgrade our flagging infrastructure
+> anyway — we're still on an old version of LaunchDarkly that doesn't support percentage rollouts
+> well.
+>
+> Quick question: do we want server-side flags only, or client-side too? Client-side adds about
+> 3 days of work but gives us instant rollback without a deploy.
+>
+> Also flagging a potential issue — the analytics sprint is scheduled to start March 24 and
+> I've committed two engineers to it. If feature flags are critical path, I may need to pull
+> one of them. Can you check with James on priority?
+>
+> — Ben
+>
+>> On March 15, 2025, Kevin Zhao wrote:
+>>
+>> Team,
+>>
+>> Did some analysis on which module to start with. Data from the last 90 days:
+>>
+>> - Dashboard: 73% of daily active users visit, avg 4.2 sessions/week
+>> - Billing: 31% visit monthly, usually just to download invoices
+>> - Settings: 12% visit, mostly one-time setup
+>> - Reports: 45% visit weekly, but usage is growing fast
+>>
+>> My recommendation: start with the dashboard. Highest traffic, most visible improvement,
+>> and the API layer is relatively straightforward (5 endpoints, read-heavy).
+>>
+>> One caveat: the dashboard API is still on our legacy REST endpoints. If we want to
+>> migrate to GraphQL (which we should eventually), this would be a good time. But it adds
+>> 2-3 weeks to the backend timeline.
+>>
+>> Side thought — if we're rebuilding the dashboard API anyway, it wouldn't be much extra
+>> work to expose a real-time analytics endpoint that our internal ops team has been
+>> requesting. Could be a nice win. Just throwing it out there.
+>>
+>> — Kevin
+>>
+>>> On March 14, 2025, Yuki Tanaka wrote:
+>>>
+>>> Hi all,
+>>>
+>>> Design team perspective:
+>>>
+>>> We have two approaches for the redesign:
+>>>
+>>> Option A: Full design system migration first (4-6 weeks), then redesign modules
+>>> on the new system. Cleaner long-term but delays visible improvements.
+>>>
+>>> Option B: Phased module redesign, migrating design system components as we go.
+>>> Faster time-to-value but means we'll have inconsistency between old and new
+>>> modules during the transition.
+>>>
+>>> I lean toward Option B. Users care more about the modules they use daily getting
+>>> better than about visual consistency across modules they rarely visit.
+>>>
+>>> Whichever way we go, I need to know the priority order of modules so I can
+>>> schedule my team. We have 2 product designers available — enough for one module
+>>> at a time with some overflow capacity.
+>>>
+>>> Also, a heads up: our component library documentation is outdated. I've assigned
+>>> Tomoko to audit and update it, but that won't be done until end of March.
+>>>
+>>> — Yuki
+>>>
+>>>> On March 13, 2025, Angela Moretti wrote:
+>>>>
+>>>> Team,
+>>>>
+>>>> Starting the planning thread for the customer portal redesign.
+>>>>
+>>>> Context: Customer satisfaction scores for the portal dropped 8 points last
+>>>> quarter. The executive team wants a visible improvement shipped by end of Q2.
+>>>>
+>>>> The portal has 4 main modules: Dashboard, Billing, Settings, Reports.
+>>>> We need to decide:
+>>>> 1. Do we redesign everything at once or go phased?
+>>>> 2. If phased, what's the priority order?
+>>>> 3. How do we handle the design system migration?
+>>>>
+>>>> Stakeholders:
+>>>> - Kevin (Backend Engineering)
+>>>> - Yuki (Design)
+>>>> - Ben (Platform/Infrastructure)
+>>>> - Rachel (QA)
+>>>> - Me (Product, decision-maker)
+>>>>
+>>>> Please share your perspectives by EOD Friday.
+>>>>
+>>>> Angela Moretti
+>>>> Senior Product Manager
+>>>> Bright Horizon Technologies
+>>>> —
+>>>> This message may contain confidential information intended only for the
+>>>> named recipient. If you are not the intended recipient, please delete
+>>>> this message and notify the sender.

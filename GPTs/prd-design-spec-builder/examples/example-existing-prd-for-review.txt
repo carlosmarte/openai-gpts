@@ -1,0 +1,29 @@
+PRD — User Role & Permissions System (DRAFT)
+
+1. Overview
+We need to add role-based access control to our SaaS platform. Currently all users have the same permissions.
+
+2. Requirements
+- Users should have roles
+- Admins can manage other users
+- Some pages should be restricted
+- API endpoints need permission checks
+- We need an audit log
+
+3. Roles
+- Admin: full access
+- Manager: can manage their team
+- Member: basic access
+- Viewer: read-only
+
+4. Implementation
+- Add role column to users table
+- Check permissions on each page load
+- Use middleware for API auth
+
+5. Timeline
+Q2 2025
+
+---
+
+[Reviewer notes: I wrote this quickly and I know it's thin. Can you review it and tell me what's missing? I want a proper PRD with acceptance criteria, edge cases, and cross-references. Don't generate the full thing yet — just show me the gaps.]
