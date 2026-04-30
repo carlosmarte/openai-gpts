@@ -1,0 +1,26 @@
+EmpNum,FullName,WorkEmail,MgrEmpID,MgmtLevel,Department,Region,Country,Office,JobTitle,JobFamily,HireDate,TermDate,Status,EmpType,PayBand,CC
+E0001,Alice Liu,alice.liu@example.com,,M8,Executive,AMER,US,SF,CEO,Executive,2018-03-12,,Active,FTE,E1,CC1000
+E0010,Bob Chen,bob.chen@example.com,E0001,M5,Engineering,AMER,US,SF,SVP Engineering,Engineering,2019-06-01,,Active,FTE,E1,CC1100
+E0011,Cara Singh,cara.singh@example.com,E0001,M5,Sales,AMER,US,NYC,SVP Sales,Sales,2020-01-15,,Active,FTE,E1,CC1200
+E0012,David Park,david.park@example.com,E0001,M5,Operations,AMER,US,Austin,SVP Operations,Ops,2019-11-04,,Active,FTE,E1,CC1300
+E0100,Eva Martinez,eva.martinez@example.com,E0010,M4,Engineering,EMEA,UK,London,VP Platform,Engineering,2021-04-22,,Active,FTE,E2,CC1101
+E0101,Frank Owen,frank.owen@example.com,E0010,M4,Engineering,AMER,US,SF,VP Product,Engineering,2020-08-10,,Active,FTE,E2,CC1102
+E0102,Gita Rao,gita.rao@example.com,E0011,M4,Sales,EMEA,DE,Berlin,VP EMEA Sales,Sales,2022-02-14,,Active,FTE,E2,CC1201
+E0200,Henry Tan,henry.tan@example.com,E0100,M3,Engineering,EMEA,UK,London,Director Platform,Engineering,2022-09-01,,Active,FTE,E3,CC1101
+E0201,Iris Kim,iris.kim@example.com,E0100,M3,Engineering,EMEA,UK,London,Director Backend,Engineering,2023-03-17,,Active,FTE,E3,CC1101
+E0202,Jamal Wright,jamal.wright@example.com,E0101,M3,Engineering,AMER,US,SF,Director ML,Engineering,2021-11-29,,Active,FTE,E3,CC1102
+E0300,Kira Schmidt,kira.schmidt@example.com,E0200,M2,Engineering,EMEA,UK,London,Sr Manager Platform,Engineering,2023-06-05,,Active,FTE,E4,CC1101
+E0301,Liam OBrien,liam.obrien@example.com,E0200,M2,Engineering,EMEA,IE,Dublin,Sr Manager Tooling,Engineering,2024-01-18,,Active,FTE,E4,CC1101
+E0302,Mei Zhang,mei.zhang@example.com,E0201,M2,Engineering,EMEA,UK,London,Sr Manager Backend,Engineering,2024-05-20,,Active,FTE,E4,CC1101
+E0400,Noah Becker,noah.becker@example.com,E0300,M1,Engineering,EMEA,UK,London,Manager Platform A,Engineering,2024-09-09,,Active,FTE,E5,CC1101
+E0401,Olivia Hassan,olivia.hassan@example.com,E0301,M1,Engineering,EMEA,IE,Dublin,Manager Tooling A,Engineering,2025-02-03,,Active,FTE,E5,CC1101
+E0500,Priya Iyer,priya.iyer@example.com,E0400,M0,Engineering,EMEA,UK,London,SWE III,Engineering,2025-08-11,,Active,FTE,E6,CC1101
+E0501,Quincy Jones,quincy.jones@example.com,E0400,M0,Engineering,EMEA,UK,London,SWE II,Engineering,2026-01-15,,Active,FTE,E6,CC1101
+E0502,Rohan Das,rohan.das@example.com,E0401,M0,Engineering,EMEA,IE,Dublin,SWE II,Engineering,2026-02-22,,Active,FTE,E6,CC1101
+E0503,Sara Lopez,sara.lopez@example.com,E0202,M0,Engineering,AMER,US,SF,SWE IV,Engineering,2025-10-04,,Active,FTE,E5,CC1102
+E0600,Tomas Reis,tomas.reis@example.com,E0102,M0,Sales,EMEA,PT,Lisbon,AE,Sales,2025-11-19,,Active,FTE,E6,CC1201
+E0601,Uma Patel,uma.patel@example.com,E0102,M0,Sales,EMEA,UK,London,AE,Sales,2026-03-08,,Active,FTE,E6,CC1201
+E0700,Victor Brown,victor.brown@example.com,E0012,M3,Operations,APAC,SG,Singapore,Director Ops APAC,Ops,2022-07-13,,Active,FTE,E3,CC1301
+E0701,Wendy Nakamura,wendy.nakamura@example.com,E0700,M0,Operations,APAC,JP,Tokyo,Ops Analyst,Ops,2024-04-04,2026-01-31,Inactive,FTE,E6,CC1301
+E0702,Xavier Lima,xavier.lima@example.com,E0700,M0,Operations,APAC,AU,Sydney,Ops Analyst,Ops,2025-06-30,,Active,FTE,E6,CC1301
+E0800,Yara Eze,yara.eze@example.com,E0001,M0,Other,AMER,US,SF,Contractor,Other,2024-10-01,,Active,Contractor,X1,CC9999
