@@ -2,24 +2,23 @@
 
 This GPT is **schema-agnostic**. There is no built-in list of expected column names. Every uploaded file declares its own schema, and the GPT learns that schema from two runtime sources:
 
-1. The **Parse-First Metadata Scan** (described below) — discovers the actual sheet names, header strings, inferred dtypes, and a small row sample.
-2. The **user-supplied Column Aliases and Column References** (described in *Optional User-Supplied Inputs*) — map the user's headers and derived columns to **analytical concepts** defined in `analytical-formulas.md` (e.g., `actual_count`, `plan_target`, `attrition_rate`, `comp_spend`, `budget`).
+1. The **Parse-First Metadata Scan** (below) — discovers the workbook's actual sheet names, header strings, inferred dtypes, and a small row sample.
+2. **`Column.md`** (loaded at runtime) — resolves the file's literal headers to canonical column names via aliases and regex search-patterns.
 
 Treat this document as the source of truth for *how* the GPT discovers structure, not *what* the structure must be.
 
 ## Parse-First Metadata Scan
 
-Before loading the full dataframe, the GPT runs a **low-memory metadata scan** to enumerate the workbook's structure without paying the cost of a full ingest. This is the *parse first, reason second* discipline — read the map of the file before walking the territory. The scan answers four questions: what sheets exist, what headers are on each sheet, what dtypes do the first few rows imply, and where does the data actually start (i.e., are there title or merged-header rows above row 1).
+Before loading the full dataframe, the GPT runs a **low-memory metadata scan** to enumerate the workbook's structure without paying the cost of a full ingest. *Parse first, reason second* — read the map before walking the territory.
 
 ### Scan procedure (Code Interpreter)
 
-Use `openpyxl` in `read_only=True` mode (or `python-calamine` if available) so headers are streamed without loading the workbook into RAM:
+Use `openpyxl` in `read_only=True` mode so headers are streamed without loading the workbook into RAM:
 
 ```python
 import openpyxl
 
 wb = openpyxl.load_workbook("<FILE_NAME>.xlsx", read_only=True, data_only=True)
-
 scan = {}
 for sheet_name in wb.sheetnames:
     ws = wb[sheet_name]
@@ -29,18 +28,15 @@ for sheet_name in wb.sheetnames:
         sample.append(row)
         if i >= 2:
             break
-    scan[sheet_name] = {
-        "headers": [h for h in headers],
-        "sample":  sample,
-    }
+    scan[sheet_name] = {"headers": list(headers), "sample": sample}
 wb.close()
 ```
 
-For CSV inputs, the equivalent is `pandas.read_csv(path, nrows=3)` — same idea, no full read.
+For CSV inputs: `pandas.read_csv(path, nrows=3)` — same idea, no full read.
 
 ### Internal context shape
 
-Once the scan completes, the GPT injects the result into its own reasoning as an XML-tagged context block. This is internal scaffolding (not shown to the user verbatim) but it is the source of truth that downstream steps — concept resolution, validation, codegen — rely on:
+Inject the scan result into reasoning as an XML-tagged context block (internal scaffolding, not shown verbatim):
 
 ```xml
 <workbook>
@@ -54,53 +50,62 @@ Once the scan completes, the GPT injects the result into its own reasoning as an
 
 ### Decisions the scan unblocks
 
-The scan must complete before the GPT does any of the following:
-- **Concept resolution** — match the user's raw headers to the analytical concepts in `analytical-formulas.md`. The user's Column Aliases drive the mapping; if no aliases are supplied and headers do not unambiguously match a concept, halt and ask.
-- **Sheet selection** — confirm the expected sheet exists; if multiple sheets, ask the user which one (do not guess).
-- **Header-row detection** — if row 1 contains merged corporate banners or a title, locate the true header row and pass `skip=N` (R) / `header=N` (Pandas) / `Table.Skip` (Power Query) accordingly.
-- **Codegen target injection** — the literal sheet name and column names emitted in any code-generation export (see `code-generation-templates.md`) are pulled from this scan, never invented.
+The scan must complete before any of:
+- **Header resolution** — walk each header through `Column.md` (canonical → alias → regex). Halt if a clause in the user's question references a concept that resolves to no literal header.
+- **Sheet selection** — confirm the expected sheet exists; if multiple sheets, ask the user which one.
+- **Header-row detection** — if row 1 contains merged banners or a title, locate the true header row and pass `header=N` (Pandas) / `Table.Skip` (Power Query) accordingly.
+- **Date-column identification** — flag any column whose inferred dtype is `datetime` or whose `Column.md` type is `date`; these become first-class filter targets.
+- **Codegen parameter injection** — emit the *literal* sheet name and column strings, never placeholders.
 
-### When the scan must halt
+### Halt conditions
 
 | Condition | Action |
 |---|---|
-| File is not `.xlsx` or `.csv` | Halt with: *"Only Excel (`.xlsx`) and CSV files are supported. Please re-export and re-attach."* |
-| Workbook is password-protected | Halt; ask the user to remove protection or supply the password out-of-band. |
-| All sheets are empty | Halt with the list of empty sheets and the file's reported row count. |
-| Header row is empty (every cell None) | Halt; ask whether a title row needs to be skipped or whether the file has no header. |
-| Inferred row count exceeds the GPT's per-run safe ceiling (default 250,000 rows) | Recommend the DuckDB codegen path rather than full Pandas ingest; ask the user to confirm before proceeding. |
+| Workbook has multiple sheets and the user has not named one | Ask which sheet, list the sheet names from the scan |
+| Headers row is empty or contains only `None` values | Ask: "row 1 looks empty — is the header row lower? confirm `header=N`" |
+| A header resolves to multiple canonical names via `Column.md` (ambiguity) | List the candidates, ask the user to disambiguate |
+| The inferred dtype of a column tagged as `date` is not parseable | Flag and ask whether to coerce (`pd.to_datetime(errors='coerce')`) or halt |
+| File row count is 0 (header-only) | Ask: "the file has only the header row — re-upload with data?" |
 
-The scan results are recorded in the run's "Caveats" / "Files used" section so the user can audit what the GPT saw before it committed to any analysis.
+## Row-Level Validation Rules
+
+After load, run these checks against the resolved columns. Concept-keyed: a rule whose target column did not resolve via `Column.md` is silently skipped. Output appears in the run's "Run footer" alongside the matched-row count.
+
+| ID | Rule | Severity | Detection |
+|---|---|---|---|
+| V1 | `employee_id` must be unique | `[CRITICAL]` | `df.employee_id.duplicated().sum() > 0` |
+| V2 | `employee_id` must be non-null | `[CRITICAL]` | `df.employee_id.isna().sum() > 0` |
+| V3 | `manager_id` must reference a valid `employee_id` | `[WARN]` | `~df.manager_id.isin(df.employee_id) & df.manager_id.notna()` |
+| V4 | `hire_date` must parse as a date | `[WARN]` | `pd.to_datetime(df.hire_date, errors='coerce').isna().sum() > 0` (where source non-null) |
+| V5 | `term_date >= hire_date` (when both present) | `[WARN]` | `df.term_date < df.hire_date` |
+| V6 | `tenure_years >= 0` | `[INFO]` | `df.tenure_years < 0` |
+| V7 | `manager_id` self-reference | `[INFO]` | `df.manager_id == df.employee_id` |
+| V8 | `employment_status` outside known vocabulary | `[INFO]` | not in `{Active, Inactive, On Leave}` (case-insensitive) |
+
+Severity routing: `[CRITICAL]` halts the run and asks the user how to proceed; `[WARN]` proceeds but surfaces in the footer; `[INFO]` is recorded but not displayed unless the user asks.
 
 ## Optional User-Supplied Inputs
 
-The uploader may attach any of three optional inputs alongside the data file. When provided, apply them **before** schema validation and analysis. **At least one of Column Aliases or Column References must be present** unless the file's headers exactly match the analytical-concept names — otherwise the GPT cannot ground its formulas.
+The GPT operates on three runtime knowledge sources, in this precedence order (sidecar > inline > knowledge default):
 
-### ORG-Chart
-- **Form:** Hierarchical mapping of leaf-entity → parent-entity (nested tree or two-column `Entity` / `Parent` table). May be supplied as JSON, YAML, CSV, or as a sidecar sheet.
-- **Use:** Hierarchical roll-ups (aggregate child entities into a parent), tree-aware concentration analysis, identifying gaps at any level of the hierarchy. Use the user-mapped grouping column from the data as the leaf-level join key.
-- **Validation:** Every value in the user's grouping column must resolve to a node in the chart; flag orphans rather than silently dropping them. Reject cycles.
+1. **Data file** — the `.xlsx`/`.csv` itself, always required.
+2. **`Column.md`** — knowledge default; user may override by uploading a sidecar with the same filename, or by supplying an inline JSON alias map at the top of the chat.
+3. **`ORG-chart.md`** — knowledge default; user may override the same way (sidecar or inline level-mapping JSON).
 
-### Column Aliases
-- **Form:** A mapping from the uploader's column names to **analytical concepts** defined in `analytical-formulas.md`. Concept names include (non-exhaustive): `entity_id`, `actual_count`, `plan_target`, `inflow_count`, `attrition_rate`, `comp_spend`, `budget`, `role_descriptors`, `timeline`. Example map: `{"FTE": "actual_count", "Plan": "plan_target", "Dept": "entity_id"}`. May be supplied inline in the prompt, as a sidecar file, or as a header row prefixed with `# alias:`.
-- **Use:** Resolve incoming columns to canonical concepts before validation. Preserves the analytical contract (formulas keyed to concepts) while accepting heterogeneous source files.
-- **Validation:** Do not coerce silently. When the source file is ambiguous (e.g., two source columns aliased to the same concept, or an alias targets an unknown concept), confirm with the user before applying. Record every alias applied in the output's "Caveats" section.
+Any override is recorded in the run footer.
 
-### Column References
-- **Form:** Declared relationships between columns — derived columns (`comp_per_head = comp_spend / actual_count`), foreign-key references into another sheet, or cross-sheet join keys. May be supplied as a list of formulas or a JSON spec.
-- **Use:** Cross-column validation, derived-column re-computation (do not trust supplied values without re-deriving), and join-key resolution when the user supplies multiple sheets.
-- **Validation:** Recompute every declared derivation. Flag rows where the supplied value diverges from the recomputed value by more than 1% (or a tolerance specified by the user). For foreign-key references, flag unresolved keys; do not invent matches.
+## Date-Column Handling
 
-## Cross-Field Validation Rules (Generic)
+Date columns are resolved via `Column.md` (canonical type `date`) or detected from the Parse-First scan's inferred dtypes. After load, coerce with `pd.to_datetime(df[col], errors='coerce')` and surface any coercion failures via rule V4.
 
-These rules apply once concepts have been resolved via Column Aliases. They reference *concepts*, not specific column names — the GPT substitutes the user's actual column names at runtime.
+Natural-language date phrases in the user's question are expanded into explicit predicates:
 
-| Rule | Check | Action if violated |
-|------|-------|-------------------|
-| Count integer | Any concept of type `count` (e.g., `actual_count`, `plan_target`, `inflow_count`) is a non-negative integer. | Flag invalid rows. |
-| Rate range | Any concept of type `rate` (e.g., `attrition_rate`) lies in `[0, 1]` after normalization (or `[0, 100]` if percent string). | Flag values outside range as data error. |
-| Spend positivity | If `comp_spend > 0` is expected, flag zero-spend rows with non-zero count. | Flag suspicious rows. |
-| Budget plausibility | `budget >= comp_spend × 0.5` (rough sanity). | Flag rows where budget is implausibly small relative to actuals. |
-| Timeline coherence | If a `timeline` concept is supplied, its parsed end-period must lie within the planning horizon implied by the data. | Flag malformed or impossible timelines. |
+| Phrase | Expansion (assuming `today = 2026-04-30`) |
+|---|---|
+| "Q1 2026" | `>= '2026-01-01' AND < '2026-04-01'` |
+| "since 2024-01-01" | `>= '2024-01-01'` |
+| "last 90 days" | `>= '2026-01-30'` |
+| "this month" | `>= '2026-04-01' AND < '2026-05-01'` |
+| "FY2025" | depends on org fiscal calendar — ask if ambiguous |
 
-If a concept is not present in the user's mapping, the corresponding rule is silently skipped — never fabricated.
+The resolved boundary dates appear in the `Filters applied` table's Reasoning column so the user can audit the date-math.

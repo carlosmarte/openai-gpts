@@ -1,136 +1,177 @@
-# Analytical Formulas — Concept-Based Patterns
+# Analytical Formulas — Filter / Project / Aggregate Patterns (F1–F8)
 
-This GPT does not bake in any specific column names. It operates on **analytical concepts** that the user maps to their actual columns via the Column Aliases described in `headcount-schema-dictionary.md`. Each formula below is keyed to one or more concepts; the GPT substitutes the user's column names at runtime.
+This file is the GPT's pattern library for row-per-employee analysis. Every Logic block in a response cites the F-number(s) used. The GPT does not invent alternative formulations.
 
-If a concept is not present in the user's alias map, the corresponding formula is silently skipped — never executed against guessed columns.
+The patterns operate on the resolved DataFrame (post-load, post-`Column.md` resolution). Each pattern lists its inputs (canonical column names from `Column.md`), the pandas idiom, and notes on when it fires.
 
-## Concept Glossary
+---
 
-| Concept | Type | Semantic role |
-|---|---|---|
-| `entity_id` | string | Primary grouping key (one row per entity). |
-| `parent_id` | string | Optional parent grouping key (used when an ORG-Chart is supplied). |
-| `actual_count` | integer | Headcount currently in place. |
-| `plan_target` | integer | Target / planned count for the planning period. |
-| `inflow_count` | integer | New additions during the period (e.g., new hires). |
-| `attrition_rate` | rate (0..1) | Departures during the period divided by average count. |
-| `comp_spend` | currency | Aggregate compensation spend for the period. |
-| `budget` | currency | Total budget approved for the planning period. |
-| `role_descriptors` | string | Free-text description of the role mix (display only). |
-| `timeline` | string | Plan-fulfillment window (e.g., quarter range). |
+## F1 — Filter (predicate over rows)
 
-The GPT extends this glossary by introducing new concepts only when the user explicitly maps them via Column Aliases.
+**Purpose:** Apply a boolean predicate to the DataFrame to retain rows that match the user's question.
 
-## Formula Patterns
+**Inputs:** any subset of resolved columns; comparison operators (`==`, `!=`, `<`, `<=`, `>`, `>=`, `in`, `between`, `contains`); boolean combinators (`&`, `|`, `~`).
 
-Each pattern carries a **name**, an **inputs** line (concepts required), and the **expression**. The GPT cites the pattern name in every Logic block.
-
-### P1 — Total
-- **Inputs:** any count concept (e.g., `actual_count` or `plan_target`)
-- **Expression:** `total = sum(<count_concept>)`
-- **Use:** Org-wide rollup, totals row.
-
-### P2 — Plan Gap
-- **Inputs:** `actual_count`, `plan_target`
-- **Expression:** `gap = plan_target − actual_count` (per row); `gap_pct = gap / plan_target` (when `plan_target > 0`).
-- **Use:** Where is the entity behind/ahead of plan.
-
-### P3 — Fill Rate
-- **Inputs:** `actual_count`, `plan_target`
-- **Expression:** `fill_rate = actual_count / plan_target` (when `plan_target > 0`).
-- **Use:** What share of plan has been achieved.
-
-### P4 — Net Growth
-- **Inputs:** `actual_count`, `inflow_count`, `attrition_rate`
-- **Expression:** `expected_departures = actual_count × attrition_rate`; `net_growth = inflow_count − expected_departures`.
-- **Use:** Are inflows offsetting expected departures.
-
-### P5 — Per-Capita Spend
-- **Inputs:** `comp_spend`, `actual_count`
-- **Expression:** `per_capita = comp_spend / actual_count` (when `actual_count > 0`).
-- **Use:** Spend efficiency per head; compare across entities.
-
-### P6 — Burn Rate
-- **Inputs:** `comp_spend`, `budget`
-- **Expression:** `burn = comp_spend / budget` (when `budget > 0`).
-- **Use:** Share of budget consumed by actual spend.
-
-### P7 — Attrition Impact
-- **Inputs:** `actual_count`, `attrition_rate`
-- **Expression:** `expected_departures = actual_count × attrition_rate`.
-- **Use:** Forward-looking departure estimate; pair with P4 to assess net capacity.
-
-### P8 — Pacing Gap
-- **Inputs:** `inflow_count`, `plan_target`, `actual_count`, `timeline`
-- **Expression:** Parse the timeline to start/end periods; compute fraction-elapsed `f = elapsed_periods / total_periods`; expected progress `expected_inflow = (plan_target − actual_count_at_start) × f`; `pacing_gap = inflow_count − expected_inflow` (negative = behind schedule). Express also as percentage points: `pacing_gap_pp = pacing_gap / (plan_target − actual_count_at_start)`.
-- **Use:** Are hires landing on schedule or slipping.
-
-### P9 — Concentration
-- **Inputs:** any concept C, computed across all entities
-- **Expression:** `share_i = C_i / sum(C)`; flag entities where `share_i > θ` (threshold supplied by user, default 0.30).
-- **Use:** Identify whether risk, spend, or growth is concentrated in a few entities.
-
-### P10 — Period-over-Period Delta
-- **Inputs:** any concept C, current period vs prior period
-- **Expression:** `delta_abs = C_now − C_prior`; `delta_pct = delta_abs / C_prior` (when `C_prior > 0`); for rates, use percentage points: `delta_pp = (C_now − C_prior) × 100`.
-- **Use:** MoM / QoQ / YoY change tracking.
-
-### P11 — Z-score Outlier
-- **Inputs:** any concept C across entities
-- **Expression:** `z_i = (C_i − mean(C)) / std(C)`; flag `|z_i| > 2.0`.
-- **Use:** Surface entities whose value sits outside the typical distribution.
-
-### P12 — Composite Risk Index
-- **Inputs:** the boolean flags from P2 (negative gap), P6 (burn > 1.0), P7 (high attrition impact), P8 (negative pacing gap)
-- **Expression:** `risk_score = sum(flag_i for i in [gap, burn, attrition, pacing])`; values 0–4.
-- **Use:** Single rollup signal for "this entity is concerning on multiple dimensions."
-
-## Pandas Reference Snippet (Concept-Driven)
-
-The snippet below illustrates how the GPT applies these patterns once Column Aliases have resolved concepts to user columns. The variables `c_actual`, `c_plan`, etc. hold the user's actual column-name strings.
-
+**Pandas idiom:**
 ```python
-import pandas as pd
-
-df = pd.read_csv('headcount.csv')
-
-# c_* are resolved at runtime from the user's Column Aliases
-c_actual    = alias_map['actual_count']
-c_plan      = alias_map['plan_target']
-c_inflow    = alias_map['inflow_count']
-c_attrition = alias_map['attrition_rate']
-c_spend     = alias_map['comp_spend']
-c_budget    = alias_map['budget']
-
-# Normalize rate (handles percent-string formats)
-df[c_attrition] = (
-    df[c_attrition].astype(str).str.rstrip('%').astype(float)
-      .pipe(lambda s: s/100 if s.max() > 1 else s)
-)
-
-# P2 Plan Gap and P3 Fill Rate
-df['gap']       = df[c_plan]   - df[c_actual]
-df['fill_rate'] = df[c_actual] / df[c_plan]
-
-# P5 Per-Capita Spend, P6 Burn Rate
-df['per_capita'] = df[c_spend] / df[c_actual]
-df['burn']       = df[c_spend] / df[c_budget]
-
-# P4 Net Growth, P7 Attrition Impact
-df['expected_departures'] = df[c_actual] * df[c_attrition]
-df['net_growth']          = df[c_inflow] - df['expected_departures']
+mask = (df.region == 'EMEA') & (df.tenure_years > 5) & (df.manager_level >= 'M3')
+matched = df[mask]
 ```
 
-Every output number must be traceable to one of the patterns above. The Logic block in Question Mode cites the pattern name (e.g., "**Logic:** P2 (Plan Gap) on `actual_count` (= `<user column>`) and `plan_target` (= `<user column>`).") so the user can audit instantly.
+**Notes:** This is the default operation. Every response that returns rows starts here.
 
-## Numerical Conventions
+---
 
-- **Currency:** preserve the user's currency; surface USD only if the user confirms. Display with thousands separators.
-- **Percentages:** display to one decimal (`12.5%`). Internally store as fractions in `[0, 1]`.
-- **Rate deltas:** percentage points (`+0.6pp`), not relative percent.
-- **Counts:** integers; flag floats as a data-quality issue per the cross-field validation rules in `headcount-schema-dictionary.md`.
-- **Dates:** ISO format (`YYYY-MM-DD`).
+## F2 — Project (column selection)
 
-## What This File Does Not Define
+**Purpose:** Limit the displayed columns to those the user's question implies, plus identifier-like columns from `Column.md` for traceability.
 
-This file does not enumerate fields, column names, or schema. The user's file structure is discovered via the Parse-First Metadata Scan and resolved via Column Aliases (see `headcount-schema-dictionary.md`). If a needed concept is not in the user's mapping, halt and ask — do not invent.
+**Inputs:** list of resolved column names.
+
+**Pandas idiom:**
+```python
+projection = ['employee_id', 'name', 'region', 'tenure_years', 'manager_level']
+matched[projection]
+```
+
+**Notes:** Default projection always includes the highest-priority identifier from `Column.md` (`employee_id` if present, else `name`, else the first PII-tagged column). This keeps spot-check tables grounded in something the user can cross-reference.
+
+---
+
+## F3 — Aggregate (count / sum / mean / median)
+
+**Purpose:** Reduce the filtered DataFrame to a single number or a group-by summary.
+
+**Inputs:** filtered DataFrame; aggregation function; optional group-by column.
+
+**Pandas idiom:**
+```python
+matched.shape[0]                                  # count
+matched.tenure_years.mean()                       # mean
+matched.groupby('department').size()              # count by group
+matched.groupby('region').tenure_years.median()   # median by group
+```
+
+**Notes:** Aggregations always run on the *filtered* DataFrame, not the full file. Always state the matched-row count alongside any aggregation so the reader knows the denominator.
+
+---
+
+## F4 — Hierarchy-Join (manager-level inheritance + transitive chain)
+
+**Purpose:** Resolve hierarchy-aware predicates that require manager-level inheritance ("managers at level ≥ M3") or transitive walks ("everyone under VP X").
+
+**Inputs:** `manager_id`, `employee_id`, `ORG-chart.md` level convention.
+
+**Pandas idiom (level inheritance, when `manager_level` is absent):**
+```python
+def compute_level(df):
+    children = df.groupby('manager_id').size().to_dict()
+    levels = {}
+    def walk(eid):
+        if eid in levels: return levels[eid]
+        if eid not in children: levels[eid] = 'M0'; return 'M0'
+        max_child = max(int(walk(c)[1:]) for c in df[df.manager_id == eid].employee_id)
+        levels[eid] = f'M{max_child + 1}'
+        return levels[eid]
+    df.employee_id.apply(walk)
+    return df.assign(manager_level=df.employee_id.map(levels))
+```
+
+**Pandas idiom (transitive subtree, "under VP X"):**
+```python
+def under(eid, df):
+    direct = set(df[df.manager_id == eid].employee_id)
+    frontier = list(direct)
+    while frontier:
+        next_layer = set(df[df.manager_id.isin(frontier)].employee_id) - direct
+        direct |= next_layer
+        frontier = list(next_layer)
+    return df[df.employee_id.isin(direct)]
+```
+
+**Notes:** Computed once per run, cached in memory. Cite F4 in Logic when any hierarchy clause fires.
+
+---
+
+## F5 — Date-Range (predicate over date columns)
+
+**Purpose:** Translate natural-language date phrases ("Q1 2026", "since 2024-01-01", "last 90 days") into explicit predicates.
+
+**Inputs:** date-typed column from `Column.md`; phrase parser.
+
+**Pandas idiom:**
+```python
+df[(df.hire_date >= '2026-01-01') & (df.hire_date < '2026-04-01')]   # Q1 2026
+df[df.hire_date >= '2024-01-01']                                      # since 2024-01-01
+df[df.hire_date >= (pd.Timestamp.today() - pd.Timedelta(days=90))]    # last 90 days
+```
+
+**Phrase resolution:** see `headcount-schema-dictionary.md` § *Date-Column Handling* for the canonical phrase → boundary table.
+
+**Notes:** Always surface the resolved boundary dates in the `Filters applied` table's Reasoning column. Quarter and fiscal-year boundaries depend on org calendar — ask if ambiguous.
+
+---
+
+## F6 — Roll-up (parent-level aggregation via ORG-chart)
+
+**Purpose:** Aggregate from leaf level up to a parent level in the manager hierarchy.
+
+**Inputs:** filtered DataFrame; an aggregation function; a roll-up depth (e.g., `manager_level == 'M3'`) or a specific parent (e.g., "everyone under VP X").
+
+**Pandas idiom (parent count via F4 subtree):**
+```python
+parents = df[df.manager_level == 'M3']
+roll_up = {p.employee_id: under(p.employee_id, df).shape[0] for _, p in parents.iterrows()}
+```
+
+**Notes:** F6 composes F1 (parent filter) + F4 (subtree walk) + F3 (aggregate over each subtree). Cite all three in Logic.
+
+---
+
+## F7 — Top-N (rank within a filtered subset)
+
+**Purpose:** Return the top or bottom N rows by a numeric column.
+
+**Inputs:** filtered DataFrame; numeric column; N; direction.
+
+**Pandas idiom:**
+```python
+matched.nlargest(10, 'tenure_years')
+matched.groupby('department').size().nlargest(5)
+```
+
+**Notes:** Spot-check is capped at 10. If the user explicitly asks for more, surface the full count + a refinement suggestion ("This returns 47 rows — want me to narrow further?").
+
+---
+
+## F8 — Cross-Tab (group-by × group-by)
+
+**Purpose:** Two-dimensional aggregation — e.g., "headcount by region × department".
+
+**Inputs:** filtered DataFrame; two group-by columns; aggregation function.
+
+**Pandas idiom:**
+```python
+pd.crosstab(matched.region, matched.department)
+matched.pivot_table(index='region', columns='department', values='employee_id', aggfunc='count')
+```
+
+**Notes:** F8 is the heaviest output — render only when the question explicitly asks for two dimensions. Otherwise prefer F3 (single group-by). Suppress any cell where n<5 per `compliance-pii-guardrails.md` if the cross-tab targets a demographic dimension.
+
+---
+
+## Pattern Composition Cheat-Sheet
+
+| User question shape | Pattern chain |
+|---|---|
+| "Show me X" (filter only) | F1 + F2 |
+| "Count of X" | F1 + F3 |
+| "Top N by Y" | F1 + F7 |
+| "X by department" | F1 + F3 (group-by) |
+| "X by region × department" | F1 + F8 |
+| "Everyone under VP Y" | F4 (subtree) + F2 |
+| "Managers at level ≥ M3" | F4 (level inheritance) + F1 + F2 |
+| "Hires in Q1 2026" | F1 + F5 |
+| "Headcount per VP" | F4 + F6 |
+
+The Logic block should name every pattern in the chain, in order.

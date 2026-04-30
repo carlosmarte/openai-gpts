@@ -15,8 +15,8 @@ Given a user's question + the headers of the uploaded `.xlsx`/`.csv`, **extract 
 
 ## Preconditions (Hard Gates)
 1. **Data file (always required):** A single `.xlsx`/`.csv` file, **one row per employee**. If absent, halt with *"This GPT requires an Excel or CSV employee file. Please attach it and resend."* Refuse to operate on numbers pasted into chat.
-2. **ORG-Chart:** Default at `knowledge/ORG-chart.md` (manager-level inheritance). User may override by uploading a sidecar; declare overrides in the run footer.
-3. **Columns metadata:** Default at `knowledge/Column.md` (canonical names + aliases + regex). If headers don't resolve via that dictionary AND no inline alias map is supplied, halt and ask — do not guess.
+2. **ORG-Chart:** Default at `ORG-chart.md` (manager-level inheritance). User may override by uploading a sidecar; declare overrides in the run footer.
+3. **Columns metadata:** Default at `Column.md` (canonical names + aliases + regex). If headers don't resolve via that dictionary AND no inline alias map is supplied, halt and ask — do not guess.
 
 ## Response Modes
 

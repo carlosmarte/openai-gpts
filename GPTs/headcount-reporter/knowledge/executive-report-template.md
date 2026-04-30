@@ -1,172 +1,167 @@
-# Executive Monthly Headcount Report — Canonical Template
+# Report Shape Catalog — Codegen Targets
 
-**Template version:** 3.0 (concept-keyed, schema-agnostic)
-**Locked sections:** 4 (Executive Summary, Entity Snapshot, Inflow & Rate Analysis, Spend & Anomalies)
+**This GPT does not render reports itself.** It emits code (per `code-generation-templates.md`) that the user runs in Excel / Pandas / DuckDB / R / Office Scripts / VBA to produce their report. This file documents the **report shapes** that the emitted code can produce — the menu the user picks from when phrasing a question.
 
-This template is the contract between the reporter GPT and its executive consumers. Do not reorder, rename, or skip sections — period-over-period comparability depends on strict template adherence. Concrete column names are not baked in; the template renders the **user-mapped column** for each analytical concept (see `analytical-formulas.md` for concept names).
+Each shape lists:
+- The user prompt that triggers it
+- The F-pattern chain (from `analytical-formulas.md`) that the GPT applies
+- The output shape the user will get when the emitted code runs
+- A sample header + 3 sample rows so the user can verify they asked for the right shape
 
----
-
-## Title Format
-
-```
-# Monthly Executive Headcount Report — {Month YYYY}
-*Reporting period: {YYYY-MM-01} to {YYYY-MM-DD}. Prior period: {YYYY-MM-01} to {YYYY-MM-DD}.*
-```
-
-If snapshot-only (no prior file), append `*[Snapshot only — no prior-period comparison]*` under the title.
+The GPT picks the shape from the user's question; if ambiguous, it asks before emitting code.
 
 ---
 
-## Section 1 — Executive Summary
+## Shape R1 — Filtered Listing
 
-Produces 5-6 bullets, conditioned on which concepts the user mapped. Skip a bullet whose concepts are not mapped.
+**Sample prompt:** "Show me everyone in EMEA hired since 2024-01-01."
+
+**F-chain:** F1 (filter) + F2 (project) + F5 (date-range, if implied)
+
+**Output shape:** rectangular table of matching rows.
 
 ```
-## 1. Executive Summary
-
-- Total `actual_count`: **{N}** (`plan_target`: {N_planned}, gap: **{+/-N (+/-P%)}**)   ← if actual_count + plan_target mapped
-- Net `inflow_count` this period: **{N_in}** (prior: {N_in_prior}, delta: {+/-N (+/-P%)})   ← if inflow_count mapped
-- Weighted-average `attrition_rate`: **{P}%** (prior: {P_prior}%, delta: {+/-Pp pp})   ← if attrition_rate mapped
-- Total `comp_spend`: **${C}** vs total `budget` **${B}** (burn: {P_burn}%)   ← if comp_spend + budget mapped
-- Top anomaly: {short description, severity, see §4 reference}
-- Composite-risk entities (P12 risk_score ≥ 3): {comma-separated list, or "None"}
+| employee_id | name        | region | hire_date  | manager_level |
+|-------------|-------------|--------|------------|---------------|
+| E1042       | Jane Doe    | EMEA   | 2024-03-15 | M2            |
+| E1097       | John Smith  | EMEA   | 2024-08-22 | M0            |
+| E1124       | Maya Patel  | EMEA   | 2025-01-09 | M1            |
 ```
 
-Weighted-average rate (P11 input): `sum(actual_count × rate) / sum(actual_count)`.
-`pp` = percentage points, used for rate-on-rate deltas.
+**Notes:** This is the most common shape. The emitted Pandas/M/SQL code returns the filtered DataFrame and the user pages through it in Excel.
 
 ---
 
-## Section 2 — Entity Snapshot
+## Shape R2 — Single Aggregate
 
-One required table covering every entity. Column headers in the table render the user-mapped column name with the concept noted in parentheses.
+**Sample prompt:** "How many people in EMEA hired since 2024-01-01?"
+
+**F-chain:** F1 + F3 (count)
+
+**Output shape:** single number.
 
 ```
-## 2. Entity Snapshot
-
-| {entity_id col} | {actual_count col} | {plan_target col} | Gap | {inflow_count col} | {attrition_rate col} | {comp_spend col} | {budget col} | Burn |
-|---|---|---|---|---|---|---|---|---|
-| {Entity 1} | {N} | {N_planned} | {+/-N} | {N_in} | {P}% | ${C} | ${B} | {P_burn}% |
-| {Entity 2} | ... | ... | ... | ... | ... | ... | ... | ... |
-| ... | | | | | | | | |
-| **Total** | **{N}** | **{N_planned}** | **{+/-N}** | **{N_in}** | **{P_wavg}%** | **${C}** | **${B}** | **{P_burn}%** |
+Matched 287 of 4,318 rows.
 ```
 
-Columns whose concept is not mapped are omitted from the table — never rendered as `N/A`. Sort by absolute Plan Gap (P2) descending. Display all entities — do not bucket into "Other" since row counts at this aggregation are usually manageable. For wide rows, allow horizontal scroll.
-
-For any entity with `actual_count < 5`, replace any spend-derived column (`comp_spend`, Burn, per-capita) with `*` and add a footnote `* Suppressed (n<5) for privacy.` per `compliance-pii-guardrails.md`.
+**Notes:** The simplest report shape — the answer is a count or sum. The emitted code prints/returns one number. Often used as a sanity check before requesting R3 or R4.
 
 ---
 
-## Section 3 — Inflow & Rate Analysis
+## Shape R3 — Group-By Summary
 
-Three subsections. Skip a subsection whose required concepts are not mapped.
+**Sample prompt:** "Headcount by department for EMEA Q1 hires."
+
+**F-chain:** F1 + F3 (group-by)
+
+**Output shape:** two-column table (group, aggregate).
 
 ```
-## 3. Inflow & Rate Analysis
-
-### 3.1 Top Plan Gaps (largest negative gap first)
-| {entity_id col} | Gap | % of Plan | {timeline col} | Pacing |
-|---|---|---|---|---|
-| {Entity} | -{N} | -{P}% | {window} | {On track / Behind / Ahead} |
-| ... | | | | |
-
-### 3.2 Rate Concentration (top 5 by rate, entities with `actual_count ≥ 5`)
-| {entity_id col} | {attrition_rate col} | Z-score | Expected Departures (P7) | {inflow_count col} | Net (P4) |
-|---|---|---|---|---|---|
-| {Entity} | {P}% | {z} | {N_dep} | {N_in} | {+/-N} |
-| ... | | | | | |
-
-### 3.3 Plan Re-baselining (period-over-period, if prior file provided)
-| {entity_id col} | {plan_target} (prior) | {plan_target} (current) | Δ | Trigger |
-|---|---|---|---|---|
-| {Entity} | {N_prior} | {N_now} | {+/-N (+/-P%)} | {[INFO] / blank} |
+| department  | headcount |
+|-------------|-----------|
+| Engineering | 142       |
+| Sales       | 71        |
+| Operations  | 74        |
 ```
 
-If no prior file: replace 3.3 with `Plan re-baselining: not applicable (no prior period file provided).`
-If `timeline` is not mapped, omit the Pacing column from 3.1.
-If `attrition_rate` is not mapped, omit subsection 3.2.
+**Notes:** The most common executive-report shape. Emitted code uses `df.groupby(col).size()` (Pandas), `Table.Group(...)` (M), or `GROUP BY` (SQL).
 
 ---
 
-## Section 4 — Spend & Anomalies
+## Shape R4 — Cross-Tab / Pivot
 
-Two subsections. Skip 4.1 if `comp_spend` and `budget` are not both mapped.
+**Sample prompt:** "Headcount by region × department for Q1 2026 hires."
+
+**F-chain:** F1 + F8 (cross-tab)
+
+**Output shape:** two-dimensional matrix.
 
 ```
-## 4. Spend & Anomalies
-
-### 4.1 Burn (entities outside the 70–105% band)
-| {entity_id col} | {comp_spend col} | {budget col} | Burn | Status |
-|---|---|---|---|---|
-| {Entity} | ${C} | ${B} | {P}% | {[CRITICAL] over / [WARN] slack} |
-| ... | | | | |
-
-If all entities are within the 70–105% band: write `All entities within target burn range (70–105%).`
-
-### 4.2 Anomalies
-1. **[CRITICAL] Rule N.N — {short description}**
-   - Entity: {Entity}
-   - Evidence: {trigger metric, citing pattern P1–P12}
-   - Recommended action: {what the relevant function should do}
-
-2. **[WARN] Rule N.N — {short description}**
-   ...
-
-3. **[INFO] Rule N.N — {short description}**
-   ...
+| region | Engineering | Sales | Operations |
+|--------|-------------|-------|------------|
+| EMEA   | 142         | 71    | 74         |
+| AMER   | 218         | 95    | 88         |
+| APAC   | 81          | 42    | 35         |
 ```
 
-If no anomalies above WARN are detected: `No anomalies above the WARN threshold this period.`
-
-If a `[CRITICAL]` anomaly fires, prepend the entire report with:
-```
-> ⚠️ CRITICAL ALERT — Human verification required before circulating this report. See §4.2.
-```
+**Notes:** Heaviest output shape — only emitted when the user explicitly asks for two dimensions. The emitted Pandas uses `pd.crosstab()` or `pivot_table(...)`; the M version uses `Table.Pivot`; SQL uses conditional `SUM(CASE WHEN ...)`.
 
 ---
 
-## Footer
+## Shape R5 — Top-N Ranked List
+
+**Sample prompt:** "Top 10 managers by span of control."
+
+**F-chain:** F1 + F7 (top-N)
+
+**Output shape:** ranked table.
 
 ```
----
-**Files used:**
-- Current period: `{filename_current}` ({N_rows_current} rows, period: {YYYY-MM})
-- Prior period: `{filename_prior}` ({N_rows_prior} rows, period: {YYYY-MM})
-- Concept map applied: {compact JSON of alias_map → user columns}
-- References recomputed: {comma-separated list, or "None"}
-- ORG-Chart: {supplied / not supplied}
-
-**Report generated:** {YYYY-MM-DD}
-**Template version:** 3.0
+| rank | employee_id | name      | direct_reports |
+|------|-------------|-----------|----------------|
+| 1    | E0042       | A. Lee    | 18             |
+| 2    | E0511       | B. Kim    | 16             |
+| 3    | E1024       | C. Garcia | 15             |
 ```
 
+**Notes:** Spot-check is capped at 10. If the user wants more, they ask for the full ranked list and the emitted code returns all rows.
+
 ---
 
-## Format Specifications
+## Shape R6 — Hierarchy Roll-Up
 
-### Delta format
-- Absolute + percentage: `+5 (+1.9%)` or `-3 (-2.1%)`.
-- Zero change: `±0 (0.0%)`.
-- Rate-on-rate: `+0.6pp` (percentage points), not `+0.6%`.
-- Currency delta: `+$50,000 (+1.2%)`.
+**Sample prompt:** "Headcount per VP — group all reports under each VP and show the VP-level totals."
 
-### Number rounding
-- Counts: whole numbers.
-- Currency: nearest unit with thousands separators (`$1,200,000`).
-- Percentages: one decimal (`12.0%`).
-- Z-scores: two decimals.
+**F-chain:** F4 (subtree walk) + F6 (parent aggregation)
 
-### Date format
-- Reporting periods: `YYYY-MM`.
-- Specific dates: `YYYY-MM-DD`.
+**Output shape:** parent-level summary, optionally with leaf-level drill-down.
 
-### Severity tags
-- `[CRITICAL]` — halt-and-verify required.
-- `[WARN]` — surface to executive attention; no halt.
-- `[INFO]` — inform but do not require action.
+```
+| vp_employee_id | vp_name     | total_org | direct_reports |
+|----------------|-------------|-----------|----------------|
+| E0024          | A. Khan     | 287       | 8              |
+| E0031          | M. Sato     | 412       | 11             |
+| E0089          | P. Schmidt  | 198       | 6              |
+```
 
-## Versioning
+**Notes:** Requires `manager_id` and resolves manager-level via `ORG-chart.md`. Emitted code does the recursive subtree walk in Pandas; SQL uses recursive CTEs.
 
-Template changes are versioned. v3.0 (this template) is concept-keyed and schema-agnostic — every column header in the rendered output is the user-mapped column name resolved via Column Aliases at runtime. Treat schema-driven template changes as a one-time migration with a clear cut-over date — do not re-render historical reports under the new template unless the underlying mapping is re-applied.
+---
+
+## Shape R7 — Date-Bucketed Time Series
+
+**Sample prompt:** "Hires by quarter for the last 2 years."
+
+**F-chain:** F1 + F5 (date-range) + F3 (group-by quarter)
+
+**Output shape:** time-series table.
+
+```
+| quarter  | hires |
+|----------|-------|
+| 2024-Q1  | 142   |
+| 2024-Q2  | 178   |
+| 2024-Q3  | 165   |
+| 2024-Q4  | 203   |
+| 2025-Q1  | 218   |
+| ...      | ...   |
+```
+
+**Notes:** Pandas uses `df.hire_date.dt.to_period('Q')`; M uses `Date.QuarterOfYear`; SQL uses `DATE_TRUNC('quarter', ...)`. Date columns must be coerced first (rule V4 in `headcount-schema-dictionary.md`).
+
+---
+
+## Composing report shapes
+
+A user prompt can chain shapes — e.g., "Top 5 departments by EMEA Q1 headcount" = R3 (group-by) + R5 (top-N), or "Headcount by region for the last 4 quarters" = R7 (time series) + R3 (group-by).
+
+The GPT identifies the shape chain from the question and emits one code block that produces the combined output. The combined shape is documented in the spot-check + Aggregations sub-block before the codegen is requested.
+
+---
+
+## Anti-patterns the GPT must refuse
+
+- **Templated multi-section reports** (the old "Executive Summary → Entity Snapshot → Inflow & Rate Analysis → Spend & Anomalies" 4-section monthly format). The user can compose multiple shape requests, but the GPT does not produce a fixed multi-section block.
+- **Narrative prose accompanying a report shape.** The GPT returns data + the Filter table; narrative is the strategist's job, not the reporter's.
+- **Plan-vs-actual / forecast-vs-actual.** Row-per-employee data does not contain plan targets; the user must supply a separate plan file (out of current scope).
+- **MoM / QoQ delta tables** unless the user supplies two files — these require comparing snapshots, which the user composes by running R7 (time-series) twice or by uploading two files and using F1 with a "snapshot_date" column.

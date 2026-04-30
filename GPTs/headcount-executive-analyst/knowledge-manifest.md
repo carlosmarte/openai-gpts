@@ -4,16 +4,16 @@ This manifest lists the seven files to upload to the GPT Builder Knowledge secti
 
 | Order | File | Purpose | Required |
 |-------|------|---------|----------|
-| 1 | `knowledge/headcount-schema-dictionary.md` | Data-field schema; Parse-First Metadata Scan; Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | Yes |
-| 2 | `knowledge/analytical-formulas.md` | Hiring gap, comp-per-head, budget burn, pacing, composite risk | Yes |
-| 3 | `knowledge/anomaly-detection-rules.md` | Concept-keyed rules: plan-vs-actual / spend-budget / rate / data-quality / composite-risk | Yes |
-| 4 | `knowledge/compliance-pii-guardrails.md` | Small-department suppression + demographic guardrails | Yes |
-| 5 | `knowledge/code-generation-templates.md` | Codegen Export Mode templates: Power Query M / Pandas / DuckDB / R / Office Scripts / VBA | Yes |
+| 1 | `headcount-schema-dictionary.md` | Data-field schema; Parse-First Metadata Scan; Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | Yes |
+| 2 | `analytical-formulas.md` | Hiring gap, comp-per-head, budget burn, pacing, composite risk | Yes |
+| 3 | `anomaly-detection-rules.md` | Concept-keyed rules: plan-vs-actual / spend-budget / rate / data-quality / composite-risk | Yes |
+| 4 | `compliance-pii-guardrails.md` | Small-department suppression + demographic guardrails | Yes |
+| 5 | `code-generation-templates.md` | Codegen Export Mode templates: Power Query M / Pandas / DuckDB / R / Office Scripts / VBA | Yes |
 
 ## Upload Procedure
 
 1. Open the GPT Builder → Configure tab → Knowledge section.
-2. Click "Upload files" and select all five files from the `knowledge/` subdirectory.
+2. Click "Upload files" and select every file from the repo `knowledge/` directory (uploaded files appear flat in GPT Builder, by basename — system-instructions reference them as bare filenames, e.g., `Column.md`).
 3. Verify each file appears in the Knowledge list with a green checkmark.
 4. Save the GPT.
 

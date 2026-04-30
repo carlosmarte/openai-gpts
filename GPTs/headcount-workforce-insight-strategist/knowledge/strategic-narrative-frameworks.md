@@ -1,113 +1,113 @@
-# Strategic Narrative Frameworks
+# Strategic Narrative Frameworks (N1–N6)
 
-This document codifies the framing patterns that turn metrics into strategic insight. Apply these patterns aggressively — they prevent regression to descriptive output. Like the rest of the GPT, these patterns are **concept-keyed**: they reference the analytical concepts in `analytical-formulas.md` (e.g., `actual_count`, `plan_target`, `attrition_rate`, `comp_spend`, `budget`), not specific column names. The user-mapped column names appear in the rendered narrative and footnotes.
+This file codifies the narrative patterns the strategist applies in the `Insight (so what?)` paragraph. Every paragraph cites at least one pattern (Nx) in the run footer. The pattern is not the prose — it is the *shape* of the implication being drawn.
 
-## The Core Structure: Implication → Evidence → Decision
+Each pattern lists:
+- **Trigger:** the data condition that causes the pattern to fire
+- **Required metrics:** what F-pattern outputs the narrative cites
+- **Implication template:** the sentence shape (filled in with the user's specific numbers)
+- **Anti-patterns:** how the framing fails when applied carelessly
 
-Every finding must follow this three-part structure:
+The strategist does not use a pattern unless the data supports it. If no pattern fits, the GPT returns the Filter Mode output without an Insight paragraph and notes "no narrative pattern fired" in the footer.
 
-1. **Implication** (1 sentence) — what the finding means for the business.
-2. **Evidence** (1-2 sentences) — the specific number or comparison that supports it, citing the analytical pattern (P1–P12).
-3. **Decision** (1 sentence) — what the executive team should do.
+---
 
-### Example
+## N1 — Concentration Risk
 
-> **Implication:** {Entity}'s combination of behind-plan attainment and elevated attrition is shrinking effective capacity just as a critical delivery ramps, putting the timeline at material risk.
-> **Evidence:** P2 Plan Gap = 5 (30 actual vs 35 planned). P7 Attrition Impact ≈ 4 expected departures. P4 Net Growth ≈ 1 against a plan calling for 5.
-> **Decision:** Approve a buffer above plan for {Entity} and accelerate near-term inflows from the next quarter into this one.
+**Trigger:** A group's share of the matched cohort is meaningfully higher than its share of the total file (e.g., "EMEA Q1 hires are 49% Tech vs 24% global Tech share").
 
-## Risk-Language Vocabulary
+**Required metrics:** F1 matched-row count + F3 group-by counts on the filtered cohort + F3 group-by counts on the full file (for comparison baseline).
 
-Translate raw metrics into business-impact language. Each row references a concept or analytical pattern, not a literal column name.
+**Implication template:** *"\<group X> is {share_in_cohort}% of {filter description} ({matched_count} of {total_matched})  — {ratio}× the {share_in_full}% baseline. If {dependency} slips, {group X} absorbs the bulk of {risk surface}."*
 
-| Raw signal | Business-impact framing |
-|---|---|
-| Large negative P2 Plan Gap | "Plan slippage" / "Capacity shortfall" |
-| `attrition_rate` above peers (P11) | "Retention exposure" / "Knowledge erosion" |
-| Combined P2 negative + elevated `attrition_rate` | "Compounding capacity loss" |
-| P8 negative pacing | "Inflow velocity drag" |
-| P6 burn > 1.0 | "Budget overrun" / "Spend discipline gap" |
-| P6 burn < 0.7 with no inflow | "Stalled investment" / "Budget under-utilization" |
-| Spend share > count share with no role-mix justification | "Spend inefficiency" / "Cost-per-output drift" |
-| Spend share < count share | "Possible under-investment in the function" |
-| `timeline` end-period in the past with under-attainment | "Plan execution gap" |
-| Re-baselined `plan_target` mid-year | "Plan integrity erosion" |
+**Anti-patterns:**
+- Citing a concentration without the baseline ("EMEA hired 142 Tech engineers" — vs what?). Always include the comparison.
+- Calling any majority a "risk" when the dependency is unstated.
 
-## Common Second-Order Patterns
+---
 
-These are the patterns to actively scan for — they generate the highest-impact findings.
+## N2 — Manager-Span Outliers
 
-### Pattern A — Under-attainment + High Rate (Compounding Loss)
-- **Trigger:** P2 Plan Gap > 0.20 × `plan_target` AND `attrition_rate` > 0.10.
-- **Strategic frame:** Net capacity is shrinking; the longer this persists, the deeper the deficit.
-- **Decision lever:** Buffer above plan + retention investment in the affected entity.
+**Trigger:** Some managers have direct-report counts ≥ 2× the median span; or some have spans ≤ 2 (potential under-utilized layer).
 
-### Pattern B — Pacing Slip + Late Timeline
-- **Trigger:** P8 pacing_gap_pp < -0.20 AND `timeline` end-period is current or past.
-- **Strategic frame:** The plan won't land — recalibrate or ramp acquisition urgently.
-- **Decision lever:** Bring forward subsequent-period inflows; revisit recruiter / sourcer capacity allocation.
+**Required metrics:** F4 (resolve `manager_id`-derived hierarchy) + F3 group-by `manager_id` to count direct reports + F3 median span across the layer.
 
-### Pattern C — Spend-Share Divergence
-- **Trigger:** `|spend_share - count_share| > 5pp` AND `role_descriptors` (if mapped) doesn't obviously justify the divergence.
-- **Strategic frame:** Either inefficient spend structure or under-funded function — diagnose before action.
-- **Decision lever:** Spend benchmark review for the entity; check role-mix shifts.
+**Implication template:** *"Median manager span is {median}. {N} managers ({pct}%) carry ≥ {2× median} reports — these are the manager-burnout candidates. {M} managers carry ≤ 2 reports — these are layer-redundancy candidates. Layer-health gap concentrates in {department / region}."*
 
-### Pattern D — Budget Slack + No Inflow
-- **Trigger:** P6 burn < 0.7 AND `inflow_count == 0` AND P2 Plan Gap > 0.
-- **Strategic frame:** Approved capacity is sitting on the table — frozen acquisition or a sourcing capacity bottleneck.
-- **Decision lever:** Investigate root cause; reallocate budget if the function genuinely doesn't need it.
+**Anti-patterns:**
+- Pointing at one over-loaded manager without showing the median (no comparison frame).
+- Conflating "high span" with "bad management" — the pattern surfaces structural risk, not performance.
 
-### Pattern E — Plan Re-baselining Drift
-- **Trigger:** Period-over-period `|Δ plan_target| > 0.10 × plan_target_prior` (P10) for several entities.
-- **Strategic frame:** The plan has drifted; "plan vs actual" no longer means what it did at the start of the year.
-- **Decision lever:** Lock the next plan version; document the rationale for any further changes.
+---
 
-### Pattern F — Concentrated Risk by Entity
-- **Trigger:** A single entity with P12 `risk_score >= 3` AND (if `role_descriptors` is mapped) it's a business-critical function.
-- **Strategic frame:** A single entity is carrying disproportionate execution risk for the whole company.
-- **Decision lever:** Executive escalation with named owner and a 30-day plan.
+## N3 — Attrition Concentration
 
-## Sectional Templates for the Brief
+**Trigger:** Departures (rows where `term_date` falls in the queried window) are non-uniformly distributed across a meaningful axis (department, manager, region).
 
-### Executive Headline (2-3 sentences)
-- Open with the most consequential finding, framed as a business outcome.
-- Quantify only what's necessary to make the implication concrete.
-- Avoid: "This report covers...", "We analyzed...", or any meta-framing.
+**Required metrics:** F1 (filter `term_date` to the window) + F3 group-by + F3 group-by on full file (baseline). If `term_date` is absent, this pattern cannot fire.
 
-### Top Risks (2-4 bullets)
-- Each risk: one bold-headline noun phrase + 2-3 sentences.
-- Always include: implication, one or two concrete numbers, recommended mitigation.
+**Implication template:** *"{N} departures in {window} concentrate in {department/region/manager_org}: {sub_count} of {N} ({pct}%) vs {baseline_pct}% of total headcount. {Concentration_factor}× over-representation suggests {hypothesis: retention issue / planned RIF / org redesign}."*
 
-### Top Opportunities (1-3 bullets)
-- Same structure as risks but framed as advantage to capture.
-- Common patterns: budget slack to redeploy, ahead-of-pace entity to model, spend efficiency advantage to defend.
+**Anti-patterns:**
+- Asserting a "retention issue" without ruling out planned reorganizations.
+- Treating <5 departures as a pattern (label as "Hypothesis" if cohort is small).
 
-### Decisions Required (numbered list)
-- Each decision: action + owner role + timeline.
-- Format: "1. [Owner role] approves [action] by [timeline]."
-- Decisions should map back to the risks/opportunities — no orphan recommendations.
+---
 
-### Confidence & Caveats
-- **Strong** — multiple periods of data confirm the pattern.
-- **Moderate** — single-period data, but a clear concentration.
-- **Hypothesis** — pattern visible but evidence weak (e.g., very small entity, missing prior period); state what would confirm it.
+## N4 — Hire-Velocity Comparison
 
-## Anti-Patterns to Avoid
+**Trigger:** Hire counts in the queried date window differ meaningfully from hire counts in a comparable prior window (e.g., Q1 2026 vs Q1 2025).
 
-- **Number-as-finding.** A bare count is not a finding. The finding is what the number reveals.
-- **Hedge soup.** "It might be worth considering looking at..." Decide or don't include it.
-- **Generic recommendations.** "Improve retention." Specific: "Commission a 30-day {Entity} retention review reporting to the named owner."
-- **Metric tour.** A walkthrough of every mapped column. Pick the 3 stories that matter most.
-- **Demographic inference.** Never. (See `compliance-pii-guardrails.md`.)
-- **Person-blame framing.** "{Entity} leadership is failing to hire." Replace with: "{Entity} attainment is N behind plan; the implication for delivery is..."
-- **Prescriptive judgment without evidence.** "{Entity} is underperforming." Replace with: "{Entity} has Y; the implication for the business is Z."
+**Required metrics:** F1 + F5 (date-range) + F3 (count) for both windows. If only one window is queryable, this pattern cannot fire.
 
-## Calibration Examples
+**Implication template:** *"{Current_window} hires: {current_n}. {Prior_comparable_window}: {prior_n}. {Delta} ({pct}% change). {Interpretation}: hiring velocity has {accelerated/decelerated/held flat} — implications for {capacity/runway/burn}."*
 
-### Weak narrative
-> "We have several entities behind plan. {Entity A} is short by some hires. {Entity B} has elevated attrition. {Entity C} is over-budget. We should look into these."
+**Anti-patterns:**
+- Comparing non-comparable windows (e.g., Q1 vs full year). Always normalize to the same length.
+- Reading a single-quarter swing as a trend (need at least 3 windows for a trend claim).
 
-### Strong narrative
-> Our most consequential exposure is the compounding capacity gap in {Entity A} and {Entity B}, both behind plan attainment while their `attrition_rate` runs at 12% and 15% respectively. With the platform rebuild starting next period, {Entity A}'s gap alone could push the timeline by a quarter; {Entity B}'s gap risks SLA degradation as volume scales. The board should approve a 5-unit buffer for {Entity A} this month and commission a {Entity B} retention review owned by the named function head.
+---
 
-The difference: the strong version names the risk, quantifies it in context, ties it to a specific business event, and asks for a specific decision. Note that the entity names are placeholders the GPT replaces with the actual values from the user's `entity_id` column at runtime.
+## N5 — Capacity vs Attrition
+
+**Trigger:** Net capacity change in a window — incoming hires minus departures — is non-trivially negative or positive.
+
+**Required metrics:** F1 + F5 (filter to window) + F3 (count where `hire_date` in window) + F3 (count where `term_date` in window). Both must be derivable.
+
+**Implication template:** *"{Window} net capacity change: +{hires} hires - {departures} departures = {net} ({pct}% of starting headcount). At this rate, {department/region} {gains_or_loses} {projected_n} per {period} — {capacity_runway} months until {threshold}."*
+
+**Anti-patterns:**
+- Projecting forward without stating "at this rate" — the math is conditional.
+- Ignoring planned vs unplanned distinction (the pattern surfaces the math, not the cause).
+
+---
+
+## N6 — Cohort Exposure
+
+**Trigger:** A specific cohort (e.g., "Tech employees hired in Q1 2024") has a distinguishing characteristic on another axis (tenure now, manager-level distribution, attrition rate).
+
+**Required metrics:** F1 (cohort definition) + F3 (cohort size) + F2 + F3 (distribution of the second axis within the cohort, vs full file).
+
+**Implication template:** *"The {cohort_definition} cohort ({N} employees, {cohort_pct}% of file) shows {axis_finding}: {distribution_difference} vs the broader population. {Implication}: this cohort is {more/less} exposed to {event} because {causal_link}."*
+
+**Anti-patterns:**
+- Defining a cohort post-hoc to fit a narrative (the cohort must come from the user's question, not be invented).
+- Confusing correlation with causation in the implication.
+
+---
+
+## Pattern selection
+
+Multiple patterns may apply to a single matched cohort; the strategist picks the **one that most directly answers "so what?"** for that question. If two patterns are equally relevant, mention both — but never list patterns serially without grounding each in a number.
+
+If the matched cohort is < 5 rows in any aggregation bucket, the Insight is labeled `Hypothesis — needs deeper analysis.` regardless of which pattern fired.
+
+---
+
+## Anti-patterns across all N1–N6
+
+- **Number-as-insight.** "EMEA has 287 Q1 hires" is data, not insight. The insight is what that 287 *means*.
+- **Implication without metric.** "We have a capacity risk in EMEA" without citing a specific cohort size, share, or rate from the Filters / Aggregations.
+- **Recommendation-as-insight.** "We should hire more in EMEA" is a decision, not an insight; surface as a separate "Decision Required" line if the question asked for one.
+- **Pattern stacking.** Citing 3+ patterns in 4 sentences pads the paragraph; pick one (or at most two) and develop them.
+- **Hedge filler.** "It seems like potentially…", "we might want to consider…" — the strategist does not hedge. Either the data supports the implication or the Insight is labeled Hypothesis.

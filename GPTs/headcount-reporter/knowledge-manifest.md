@@ -4,17 +4,17 @@ This manifest lists the seven files to upload to the GPT Builder Knowledge secti
 
 | Order | File | Purpose | Required |
 |-------|------|---------|----------|
-| 1 | `knowledge/headcount-schema-dictionary.md` | Data-field schema validation; Parse-First Metadata Scan; Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | Yes |
-| 2 | `knowledge/analytical-formulas.md` | Hiring gap, comp-per-head, budget burn, pacing | Yes |
-| 3 | `knowledge/executive-report-template.md` | Canonical 4-section report skeleton (template v2.0) | Yes |
-| 4 | `knowledge/anomaly-detection-rules.md` | Section 4 anomaly checks | Yes |
-| 5 | `knowledge/compliance-pii-guardrails.md` | Small-department suppression + demographic guardrails | Yes |
-| 6 | `knowledge/code-generation-templates.md` | Codegen Export Mode templates: Power Query M / Pandas / DuckDB / R / Office Scripts / VBA | Yes |
+| 1 | `headcount-schema-dictionary.md` | Data-field schema validation; Parse-First Metadata Scan; Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | Yes |
+| 2 | `analytical-formulas.md` | Hiring gap, comp-per-head, budget burn, pacing | Yes |
+| 3 | `executive-report-template.md` | Canonical 4-section report skeleton (template v2.0) | Yes |
+| 4 | `anomaly-detection-rules.md` | Section 4 anomaly checks | Yes |
+| 5 | `compliance-pii-guardrails.md` | Small-department suppression + demographic guardrails | Yes |
+| 6 | `code-generation-templates.md` | Codegen Export Mode templates: Power Query M / Pandas / DuckDB / R / Office Scripts / VBA | Yes |
 
 ## Upload Procedure
 
 1. Open the GPT Builder → Configure tab → Knowledge section.
-2. Upload all five files from the `knowledge/` subdirectory.
+2. Upload every file from the repo `knowledge/` directory (uploaded files appear flat in GPT Builder, by basename — system-instructions reference them as bare filenames, e.g., `Column.md`).
 3. Verify each appears with a green checkmark.
 4. Save the GPT.
 
