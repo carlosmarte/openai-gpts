@@ -10,16 +10,19 @@
 
 ## Canonical Schema
 
-The GPT expects a single department-level worksheet with a governance header and 9 data columns:
+The GPT expects a single department-level worksheet with a governance header (stewardship metadata) and one row per department. Field-level definitions live in `knowledge/headcount-schema-dictionary.md` — that file is the contract.
 
-**Header (governance metadata):** `Prepared by`, `Date Prepared`, `Approved by`, `Date Approved`
+## Required Inputs
 
-**Data columns (one row per department):** `Department`, `Current Headcount`, `Planned Headcount`, `New Hires`, `Attrition Rate`, `Total Compensation Costs`, `Role/Position Titles`, `Hiring Timeline`, `Budget Allocation per Department`
+The GPT enforces a hard intake gate. It will refuse to report on numbers that are not anchored to an attached file.
 
-### Example row
-| Department | Current | Planned | New Hires | Attrition | Total Comp | Role Titles | Timeline | Budget |
-|---|---|---|---|---|---|---|---|---|
-| Engineering | 30 | 35 | 5 | 12.0% | $3,500,000 | Software Engineer, DevOps | Q1-Q3 2024 | $4,200,000 |
+| Input | Status | Notes |
+|---|---|---|
+| Data file (`.xlsx` or `.csv`) | **Always required** | Current period (and optionally a second file for the prior period). The GPT halts with a request message if no file is attached. |
+| ORG-Chart | **Required unless in knowledge** | Not currently in the knowledge bundle, so the user must supply one per run if they want the parent-level roll-up beneath the Department Snapshot table. The user may opt out, in which case the report omits the roll-up and notes it in the footer. |
+| Columns metadata (Aliases, References) | **Required unless in knowledge** | The canonical field names are defined in `knowledge/headcount-schema-dictionary.md` — that file IS the in-knowledge Columns reference. The user must supply an Alias map only if the file uses non-canonical headers (applied to both current and prior files), and Column References only if the file declares derived columns or cross-sheet joins. |
+
+See `knowledge/headcount-schema-dictionary.md` § *Optional User-Supplied Inputs* for the format spec and validation rules.
 
 ## System Instructions
 
@@ -40,7 +43,7 @@ Character count target: under 8000. The full report template lives in the Knowle
 
 | # | File Name | Format | Purpose | Size Est. |
 |---|-----------|--------|---------|-----------|
-| 1 | headcount-schema-dictionary.md | MD | Governance header + 9-column schema validation reference | ~3 KB |
+| 1 | headcount-schema-dictionary.md | MD | Governance header + data-field schema validation reference | ~3 KB |
 | 2 | analytical-formulas.md | MD | All metric formulas in the report | ~4 KB |
 | 3 | executive-report-template.md | MD | Canonical 4-section report skeleton with exact tables | ~5 KB |
 | 4 | anomaly-detection-rules.md | MD | Anomaly checks for section 4 | ~5 KB |
@@ -49,7 +52,7 @@ Character count target: under 8000. The full report template lives in the Knowle
 ### File Details
 
 #### 1. headcount-schema-dictionary.md
-- **Purpose:** Schema validation reference; confirms governance fields and data columns are present and that values are valid.
+- **Purpose:** Schema validation reference; confirms governance and data fields are present and that values are valid.
 - **Update Frequency:** When upstream HRIS or planning template schema changes.
 
 #### 2. analytical-formulas.md
@@ -58,7 +61,7 @@ Character count target: under 8000. The full report template lives in the Knowle
 
 #### 3. executive-report-template.md
 - **Purpose:** The canonical report skeleton — the entire point of this GPT is consistency. The template is the contract.
-- **Content:** Title format, four section structures, exact table columns, delta format spec, anomaly format spec, footer format.
+- **Content:** Title format, four section structures, table layouts, delta format spec, anomaly format spec, footer format.
 - **Update Frequency:** Quarterly review with executive consumers; treat changes as a versioned migration (v1 → v2) so historical comparability is preserved.
 
 #### 4. anomaly-detection-rules.md

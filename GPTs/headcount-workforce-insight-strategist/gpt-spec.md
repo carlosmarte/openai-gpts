@@ -10,16 +10,19 @@
 
 ## Canonical Schema
 
-The GPT expects a single department-level worksheet with a governance header and 9 data columns:
+The GPT expects a single department-level worksheet with a governance header (stewardship metadata) and one row per department. Field-level definitions live in `knowledge/headcount-schema-dictionary.md` — that file is the contract.
 
-**Header (governance metadata):** `Prepared by`, `Date Prepared`, `Approved by`, `Date Approved`
+## Required Inputs
 
-**Data columns (one row per department):** `Department`, `Current Headcount`, `Planned Headcount`, `New Hires`, `Attrition Rate`, `Total Compensation Costs`, `Role/Position Titles`, `Hiring Timeline`, `Budget Allocation per Department`
+The GPT enforces a hard intake gate. It will refuse to write a strategic brief on numbers that are not anchored to an attached file — board-grade narrative on imagined data is exactly what this GPT must not produce.
 
-### Example row
-| Department | Current | Planned | New Hires | Attrition | Total Comp | Role Titles | Timeline | Budget |
-|---|---|---|---|---|---|---|---|---|
-| Engineering | 30 | 35 | 5 | 12.0% | $3,500,000 | Software Engineer, DevOps | Q1-Q3 2024 | $4,200,000 |
+| Input | Status | Notes |
+|---|---|---|
+| Data file (`.xlsx` or `.csv`) | **Always required** | One row per department + governance header. The GPT halts with a request message if no file is attached. |
+| ORG-Chart | **Required unless in knowledge** | Not currently in the knowledge bundle, so the user must supply one per upload to enable org-tree-aware framing (concentrated risk often surfaces only after roll-up). If declined, the brief restricts framing to leaf-department level and notes it in "Confidence & Caveats". |
+| Columns metadata (Aliases, References) | **Required unless in knowledge** | The canonical field names are defined in `knowledge/headcount-schema-dictionary.md` — that file IS the in-knowledge Columns reference. The user must supply an Alias map only if the file uses non-canonical headers, and Column References only if the file declares derived columns or cross-sheet joins. |
+
+See `knowledge/headcount-schema-dictionary.md` § *Optional User-Supplied Inputs* for the format spec and validation rules.
 
 ## System Instructions
 
@@ -40,7 +43,7 @@ Character count target: under 8000. Behavioral framing patterns and longer narra
 
 | # | File Name | Format | Purpose | Size Est. |
 |---|-----------|--------|---------|-----------|
-| 1 | headcount-schema-dictionary.md | MD | Governance header + 9-column schema | ~3 KB |
+| 1 | headcount-schema-dictionary.md | MD | Governance header + data-field schema | ~3 KB |
 | 2 | analytical-formulas.md | MD | Hiring gap, comp-per-head, budget burn, pacing, composite risk | ~4 KB |
 | 3 | strategic-narrative-frameworks.md | MD | Risk/opportunity framing patterns for plan-execution data | ~4 KB |
 | 4 | anomaly-detection-rules.md | MD | Anomalies surfaced as strategic risks | ~5 KB |
@@ -49,7 +52,7 @@ Character count target: under 8000. Behavioral framing patterns and longer narra
 ### File Details
 
 #### 1. headcount-schema-dictionary.md
-- **Purpose:** Source of truth for column meaning before any cross-analysis.
+- **Purpose:** Source of truth for field meaning before any cross-analysis.
 - **Update Frequency:** When upstream HRIS schema or planning template changes.
 
 #### 2. analytical-formulas.md

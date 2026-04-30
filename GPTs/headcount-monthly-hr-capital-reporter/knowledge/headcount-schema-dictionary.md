@@ -15,6 +15,25 @@ These four fields appear above the data table and document who owns the file:
 
 Validation: if `Date Approved < Date Prepared`, the file is unsigned-off — flag it and refuse to publish executive output until approval is recorded.
 
+## Optional User-Supplied Inputs
+
+The uploader may attach any of three optional inputs alongside the data file. When provided, apply them **before** schema validation and analysis.
+
+### ORG-Chart
+- **Form:** Hierarchical mapping of department → parent department (nested tree or two-column `Department` / `Parent` table). May be supplied as JSON, YAML, CSV, or as a sidecar sheet.
+- **Use:** Hierarchical roll-ups (aggregate child departments into a parent), org-tree-aware concentration analysis, identifying gaps at any level of the hierarchy. Use `Department` from the data as the leaf-level join key.
+- **Validation:** Every `Department` value in the data must resolve to a node in the chart; flag orphans rather than silently dropping them. Reject cycles.
+
+### Column Aliases
+- **Form:** A mapping from the uploader's column names to the canonical fields defined below — e.g., `{"FTE": "Current Headcount", "Plan": "Planned Headcount", "Dept": "Department"}`. May be supplied inline in the prompt, as a sidecar file, or as a header row prefixed with `# alias:`.
+- **Use:** Rename incoming columns to canonical names before validation. Preserves the canonical contract while accepting heterogeneous source files.
+- **Validation:** Do not coerce silently. When the source file is ambiguous (e.g., two source columns aliased to the same canonical field, or an alias targets a non-canonical field), confirm with the user before applying. Record every alias applied in the output's "Caveats" section.
+
+### Column References
+- **Form:** Declared relationships between columns — derived columns (`Comp per Head = Total Compensation Costs / Current Headcount`), foreign-key references into another sheet, or cross-sheet join keys. May be supplied as a list of formulas or a JSON spec.
+- **Use:** Cross-column validation, derived-column re-computation (do not trust supplied values without re-deriving), and join-key resolution when the user supplies multiple sheets.
+- **Validation:** Recompute every declared derivation. Flag rows where the supplied value diverges from the recomputed value by more than 1% (or a tolerance specified by the user). For foreign-key references, flag unresolved keys; do not invent matches.
+
 ## Data Columns
 
 ### `Department`

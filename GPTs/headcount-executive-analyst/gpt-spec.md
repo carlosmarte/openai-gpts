@@ -10,26 +10,19 @@
 
 ## Canonical Schema
 
-The GPT expects a single department-level worksheet with a governance header and 9 data columns:
+The GPT expects a single department-level worksheet with a governance header (stewardship metadata) and one row per department. Field-level definitions live in `knowledge/headcount-schema-dictionary.md` — that file is the contract.
 
-**Header (governance metadata):**
-- `Prepared by`, `Date Prepared`, `Approved by`, `Date Approved`
+## Required Inputs
 
-**Data columns (one row per department):**
-- `Department`
-- `Current Headcount`
-- `Planned Headcount`
-- `New Hires`
-- `Attrition Rate`
-- `Total Compensation Costs`
-- `Role/Position Titles`
-- `Hiring Timeline`
-- `Budget Allocation per Department`
+The GPT enforces a hard intake gate. It will refuse to analyze numbers that are not anchored to an attached file.
 
-### Example row
-| Department | Current | Planned | New Hires | Attrition | Total Comp | Role Titles | Timeline | Budget |
-|---|---|---|---|---|---|---|---|---|
-| Engineering | 30 | 35 | 5 | 12.0% | $3,500,000 | Software Engineer, DevOps | Q1-Q3 2024 | $4,200,000 |
+| Input | Status | Notes |
+|---|---|---|
+| Data file (`.xlsx` or `.csv`) | **Always required** | One row per department + governance header. The GPT halts with a request message if no file is attached. |
+| ORG-Chart | **Required unless in knowledge** | Not currently in the knowledge bundle, so the user must supply one per upload (JSON / YAML / CSV / sidecar sheet) to enable parent-level roll-ups. The user may explicitly opt out, in which case the analysis stays at leaf-department level. |
+| Columns metadata (Aliases, References) | **Required unless in knowledge** | The canonical field names are defined in `knowledge/headcount-schema-dictionary.md` — that file IS the in-knowledge Columns reference. The user must supply an Alias map only if the uploaded file uses non-canonical headers, and Column References only if the file declares derived columns or cross-sheet joins. |
+
+See `knowledge/headcount-schema-dictionary.md` § *Optional User-Supplied Inputs* for the format spec and validation rules.
 
 ## System Instructions
 
@@ -50,7 +43,7 @@ Character count target: under 8000. Behavioral rules and workflow live in Instru
 
 | # | File Name | Format | Purpose | Size Est. |
 |---|-----------|--------|---------|-----------|
-| 1 | headcount-schema-dictionary.md | MD | Governance header + 9-column schema definitions | ~3 KB |
+| 1 | headcount-schema-dictionary.md | MD | Governance header + data-field schema definitions | ~3 KB |
 | 2 | analytical-formulas.md | MD | Hiring gap, fill rate, comp-per-head, budget burn, pacing, composite risk | ~4 KB |
 | 3 | anomaly-detection-rules.md | MD | Governance / plan-vs-actual / comp-budget / attrition / data-quality rules | ~5 KB |
 | 4 | compliance-pii-guardrails.md | MD | Small-department suppression, governance-name handling, demographic guardrails | ~3 KB |
@@ -59,8 +52,8 @@ Character count target: under 8000. Behavioral rules and workflow live in Instru
 
 #### 1. headcount-schema-dictionary.md
 - **Purpose:** Source of truth for what each header field and data column means and how to interpret values.
-- **Content:** Governance header (4 fields), data columns (9 fields), cross-column validation rules.
-- **Source:** Synthesized from the example file structure (Prepared by / Approved by header + 9-column department table).
+- **Content:** Governance header, data-field definitions, cross-field validation rules.
+- **Source:** Synthesized from the example file structure (governance header plus one row per department).
 - **Update Frequency:** Whenever the upstream HRIS export schema changes.
 
 #### 2. analytical-formulas.md

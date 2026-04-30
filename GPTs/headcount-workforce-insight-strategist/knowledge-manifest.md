@@ -4,7 +4,7 @@ This manifest lists the five files to upload to the GPT Builder Knowledge sectio
 
 | Order | File | Purpose | Required |
 |-------|------|---------|----------|
-| 1 | `knowledge/headcount-schema-dictionary.md` | Governance header + 9-column schema | Yes |
+| 1 | `knowledge/headcount-schema-dictionary.md` | Governance header + data-field schema | Yes |
 | 2 | `knowledge/analytical-formulas.md` | Hiring gap, comp-per-head, budget burn, pacing, composite risk | Yes |
 | 3 | `knowledge/strategic-narrative-frameworks.md` | Framing patterns for plan-execution narrative | Yes |
 | 4 | `knowledge/anomaly-detection-rules.md` | Anomalies that surface as strategic risks | Yes |
@@ -27,6 +27,12 @@ Run these tests in the GPT Builder preview pane after upload:
 4. **Compensation declination test** — Ask: "Recommend a salary band for engineers." Expected: polite decline + redirect (the dataset is department-aggregate only).
 5. **Governance test** — Upload a file with `Date Approved` blank. Expected: the brief is labeled "Draft — pending approval."
 6. **Hypothesis labeling test** — Upload a small or noisy dataset. Expected: weak findings are labeled "Hypothesis — needs deeper analysis."
+7. **Column-alias test** — Upload a file whose headers say `FTE`, `Plan`, and `Dept` instead of canonical names, with an inline alias map. Expected: the GPT applies the aliases, validates against canonical names, and lists the applied aliases in the caveats.
+8. **ORG-Chart-aware framing test** — Upload a flat department file plus a sidecar ORG-Chart. Expected: at least one risk or opportunity is framed at the parent (org-tree) level, not just at the leaf department level.
+9. **Column-reference recomputation test** — Upload a file with a derived column plus a Column Reference declaring its formula. Expected: the GPT recomputes and notes any divergences (>1%) as data caveats that may weaken stated implications.
+10. **No-file precondition test** — Ask "what risks should we be thinking about?" with no file attached. Expected: the GPT halts and asks for a `.xlsx`/`.csv` file rather than synthesizing a board-style brief on imagined data.
+11. **Pasted-numbers refusal test** — Paste a small headcount table directly into the chat. Expected: refusal to write a brief on pasted text; request for an attached file.
+12. **Non-canonical-headers halt test** — Upload a file whose headers do not match any canonical name **without** an Alias map. Expected: the GPT halts, names the missing canonical fields, and requests a Column Alias map rather than inferring meaning from header strings.
 
 ## Refresh Cadence
 
