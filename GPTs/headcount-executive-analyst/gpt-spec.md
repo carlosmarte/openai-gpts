@@ -4,13 +4,13 @@
 
 **Name:** Headcount Executive Analyst
 
-**Description:** Audit-grade analytics agent that ingests department-level headcount spreadsheets and produces reconciled plan-vs-actual metrics, comp-vs-budget analysis, attrition impact, and hiring-pacing assessments — with anomaly detection. Built for HR analysts and finance partners who need defensible numbers — every figure traces back to a pandas operation on the source file.
+**Description:** Audit-grade analytics agent for row-per-entity headcount spreadsheets. Produces reconciled plan-vs-actual, spend-vs-budget, rate-impact, and pacing analyses with anomaly flags — every number traces back to a pandas operation. Schema-agnostic: users map columns to analytical concepts.
 
 **Profile Image Concept:** A minimalist navy-and-white shield with an upward-trending sparkline and a magnifying glass overlay; corporate, audit-firm aesthetic. Convey precision and trust, not playful or AI-cliché.
 
 ## Canonical Schema
 
-The GPT expects a single department-level worksheet with a governance header (stewardship metadata) and one row per department. Field-level definitions live in `knowledge/headcount-schema-dictionary.md` — that file is the contract.
+The GPT expects a single row-per-entity worksheet. It is schema-agnostic — there is no built-in column list; the user maps their columns to the analytical concepts in `knowledge/analytical-formulas.md` via Column Aliases. The discovery + validation procedure (Parse-First Metadata Scan, Optional User-Supplied Inputs, generic cross-field rules) lives in `knowledge/headcount-schema-dictionary.md` — that file is the contract.
 
 ## Required Inputs
 
@@ -18,7 +18,7 @@ The GPT enforces a hard intake gate. It will refuse to analyze numbers that are 
 
 | Input | Status | Notes |
 |---|---|---|
-| Data file (`.xlsx` or `.csv`) | **Always required** | One row per department + governance header. The GPT halts with a request message if no file is attached. |
+| Data file (`.xlsx` or `.csv`) | **Always required** | One row per entity. The GPT halts with a request message if no file is attached. |
 | ORG-Chart | **Required unless in knowledge** | Not currently in the knowledge bundle, so the user must supply one per upload (JSON / YAML / CSV / sidecar sheet) to enable parent-level roll-ups. The user may explicitly opt out, in which case the analysis stays at leaf-department level. |
 | Columns metadata (Aliases, References) | **Required unless in knowledge** | The canonical field names are defined in `knowledge/headcount-schema-dictionary.md` — that file IS the in-knowledge Columns reference. The user must supply an Alias map only if the uploaded file uses non-canonical headers, and Column References only if the file declares derived columns or cross-sheet joins. |
 
@@ -45,11 +45,11 @@ Behind both modes sits a **Parse-First Metadata Scan** (low-memory `openpyxl rea
 
 1. "Reconcile this department headcount file — show plan vs actual, attrition impact, and budget burn."
 2. "Which departments are most behind their hiring plan, and by how much?"
-3. "Flag every anomaly: governance, plan-vs-actual, comp/budget, and attrition outliers."
+3. "Flag every anomaly: plan-vs-actual, comp/budget, attrition, and data-quality outliers."
 4. "Compare comp-per-head across departments and surface the outliers — Z-score basis."
 5. "Export this reconciliation as Python (Pandas) — copy-paste-ready, no placeholders."
 6. "Give me the Power Query M that produces the hiring-gap table, with a dynamic file path."
-7. "Generate the VBA macro that extracts Department, Current Headcount, and Total Compensation Costs into a fresh sheet."
+7. "Generate the VBA macro that extracts the entity_id, actual_count, and comp_spend columns from my file into a fresh sheet."
 
 ## Knowledge Files
 
@@ -57,18 +57,18 @@ Behind both modes sits a **Parse-First Metadata Scan** (low-memory `openpyxl rea
 
 | # | File Name | Format | Purpose | Size Est. |
 |---|-----------|--------|---------|-----------|
-| 1 | headcount-schema-dictionary.md | MD | Governance header + data-field schema, Parse-First Metadata Scan, Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | ~7 KB |
+| 1 | headcount-schema-dictionary.md | MD | Data-field schema, Parse-First Metadata Scan, Optional User-Supplied Inputs (ORG-Chart, Aliases, References) | ~7 KB |
 | 2 | analytical-formulas.md | MD | Hiring gap, fill rate, comp-per-head, budget burn, pacing, composite risk | ~4 KB |
-| 3 | anomaly-detection-rules.md | MD | Governance / plan-vs-actual / comp-budget / attrition / data-quality rules | ~5 KB |
-| 4 | compliance-pii-guardrails.md | MD | Small-department suppression, governance-name handling, demographic guardrails | ~3 KB |
+| 3 | anomaly-detection-rules.md | MD | Plan-vs-actual / comp-budget / attrition / data-quality / composite-risk rules | ~5 KB |
+| 4 | compliance-pii-guardrails.md | MD | Small-department suppression, demographic guardrails | ~3 KB |
 | 5 | code-generation-templates.md | MD | Codegen Export Mode templates: Power Query M, Pandas, DuckDB, R, Office Scripts (TS), VBA — with safeguards and an output envelope | ~9 KB |
 
 ### File Details
 
 #### 1. headcount-schema-dictionary.md
-- **Purpose:** Source of truth for what each header field and data column means and how to interpret values.
-- **Content:** Governance header, data-field definitions, cross-field validation rules.
-- **Source:** Synthesized from the example file structure (governance header plus one row per department).
+- **Purpose:** Source of truth for what each data field means and how to interpret values.
+- **Content:** Data-field definitions, the Parse-First Metadata Scan procedure, Optional User-Supplied Inputs (ORG-Chart, Aliases, References), cross-field validation rules.
+- **Source:** Synthesized from the example file structure (one row per entity).
 - **Update Frequency:** Whenever the upstream HRIS export schema changes.
 
 #### 2. analytical-formulas.md
@@ -78,12 +78,12 @@ Behind both modes sits a **Parse-First Metadata Scan** (low-memory `openpyxl rea
 
 #### 3. anomaly-detection-rules.md
 - **Purpose:** Codify the anomaly detection logic so it runs consistently every report.
-- **Content:** Governance anomalies (unsigned files), plan-vs-actual anomalies, comp/budget overruns, attrition outliers, data-quality issues, composite risk.
+- **Content:** Plan-vs-actual anomalies, comp/budget overruns, attrition outliers, data-quality issues, composite risk.
 - **Update Frequency:** Monthly tuning during the first 6 months, quarterly thereafter.
 
 #### 4. compliance-pii-guardrails.md
-- **Purpose:** Hard rules for handling governance-header names and small-department aggregates.
-- **Content:** Treatment of `Prepared by` / `Approved by`, small-department suppression (n<5), demographic-bias avoidance, regulatory alignment notes.
+- **Purpose:** Hard rules for handling small-entity aggregates and demographic-bias avoidance.
+- **Content:** Small-department suppression (n<5), demographic-bias avoidance, regulatory alignment notes.
 - **Update Frequency:** Annually or whenever applicable regulations change.
 
 #### 5. code-generation-templates.md
@@ -112,7 +112,7 @@ Behind both modes sits a **Parse-First Metadata Scan** (low-memory `openpyxl rea
 
 ## Notes for the Builder
 
-- After uploading the four knowledge files, test with a sample of the example data (Sales=15/20, Engineering=30/35, etc.) before sharing.
-- Verify the governance halt: deliberately strip `Date Approved` from a test file and confirm the GPT refuses to publish.
-- Verify checksum behavior: introduce a row whose comp cost is implausible vs budget and confirm the GPT flags Rule 3.1 or 3.2.
-- Verify small-department suppression: include a department with `Current Headcount = 3` and confirm `comp_per_head` is suppressed with `*`.
+- After uploading the five knowledge files, test with a sample row-per-entity dataset of your choosing (with a Column Alias map) before sharing.
+- Verify checksum behavior: introduce a row whose `comp_spend` is implausible vs `budget` and confirm the GPT flags Rule 2.1 (Budget overrun) or Rule 2.2 (Material budget slack).
+- Verify small-entity suppression: include an entity with `actual_count = 3` and confirm any spend-derived display is suppressed with `*`.
+- Verify schema-agnostic intake: upload the same dataset with non-canonical headers and an Alias map; confirm the GPT applies the aliases and produces identical results.

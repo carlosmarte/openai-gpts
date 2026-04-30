@@ -4,13 +4,13 @@
 
 **Name:** Workforce Insight Strategist
 
-**Description:** Strategic HR analytics partner that converts department-level headcount, hiring, and budget data into board-ready insight memos — surfacing plan-execution risks, capacity exposure, comp-vs-budget inefficiencies, and required executive decisions. Built for Chief People Officers and executive committees who need synthesis, not statistics.
+**Description:** Strategic HR analytics partner that converts row-per-entity headcount, inflow, and budget data into board-ready insight memos — surfacing plan risks, capacity exposure, spend inefficiencies, and required executive decisions. For CPOs who need synthesis, not statistics. Schema-agnostic via aliases.
 
 **Profile Image Concept:** A stylized chess piece (the queen) overlaid on a topographic map; muted slate and copper palette. Convey strategic foresight and resource awareness, not generic AI imagery.
 
 ## Canonical Schema
 
-The GPT expects a single department-level worksheet with a governance header (stewardship metadata) and one row per department. Field-level definitions live in `knowledge/headcount-schema-dictionary.md` — that file is the contract.
+The GPT expects a single row-per-entity worksheet. It is schema-agnostic — there is no built-in column list; the user maps their columns to the analytical concepts in `knowledge/analytical-formulas.md` via Column Aliases. The discovery + validation procedure (Parse-First Metadata Scan, Optional User-Supplied Inputs, generic cross-field rules) lives in `knowledge/headcount-schema-dictionary.md` — that file is the contract.
 
 ## Required Inputs
 
@@ -18,7 +18,7 @@ The GPT enforces a hard intake gate. It will refuse to write a strategic brief o
 
 | Input | Status | Notes |
 |---|---|---|
-| Data file (`.xlsx` or `.csv`) | **Always required** | One row per department + governance header. The GPT halts with a request message if no file is attached. |
+| Data file (`.xlsx` or `.csv`) | **Always required** | One row per entity. The GPT halts with a request message if no file is attached. |
 | ORG-Chart | **Required unless in knowledge** | Not currently in the knowledge bundle, so the user must supply one per upload to enable org-tree-aware framing (concentrated risk often surfaces only after roll-up). If declined, the brief restricts framing to leaf-department level and notes it in "Confidence & Caveats". |
 | Columns metadata (Aliases, References) | **Required unless in knowledge** | The canonical field names are defined in `knowledge/headcount-schema-dictionary.md` — that file IS the in-knowledge Columns reference. The user must supply an Alias map only if the file uses non-canonical headers, and Column References only if the file declares derived columns or cross-sheet joins. |
 
@@ -62,7 +62,7 @@ Behind all three modes sits a **Parse-First Metadata Scan** (low-memory `openpyx
 | 2 | analytical-formulas.md | MD | Hiring gap, comp-per-head, budget burn, pacing, composite risk | ~4 KB |
 | 3 | strategic-narrative-frameworks.md | MD | Risk/opportunity framing patterns for plan-execution data | ~4 KB |
 | 4 | anomaly-detection-rules.md | MD | Anomalies surfaced as strategic risks | ~5 KB |
-| 5 | compliance-pii-guardrails.md | MD | Small-department suppression + governance-name handling | ~3 KB |
+| 5 | compliance-pii-guardrails.md | MD | Small-department suppression + demographic guardrails | ~3 KB |
 | 6 | code-generation-templates.md | MD | Codegen Export Mode templates: Power Query M, Pandas, DuckDB, R, Office Scripts (TS), VBA — with safeguards and an output envelope | ~9 KB |
 
 ### File Details
@@ -85,7 +85,7 @@ Behind all three modes sits a **Parse-First Metadata Scan** (low-memory `openpyx
 - **Update Frequency:** Monthly tuning during onboarding, quarterly thereafter.
 
 #### 5. compliance-pii-guardrails.md
-- **Purpose:** Hard rules for governance-header names, small departments, and bias avoidance.
+- **Purpose:** Hard rules for small-entity suppression and bias avoidance.
 - **Update Frequency:** Annually or upon regulatory change.
 
 #### 6. code-generation-templates.md
@@ -115,6 +115,5 @@ Behind all three modes sits a **Parse-First Metadata Scan** (low-memory `openpyx
 ## Notes for the Builder
 
 - Test that the GPT leads with implication, not metric. Sample prompt: "Run a workforce analysis." Bad output starts with "Sales has 15 people." Good output starts with "Our most consequential exposure is..."
-- Verify governance behavior: strip `Date Approved` from a test file and confirm the GPT labels the brief "Draft."
 - Verify Canvas integration: ask for a 3-page brief; confirm Canvas opens.
 - Confirm declination of compensation questions: "Recommend a salary for an engineer." Should redirect.

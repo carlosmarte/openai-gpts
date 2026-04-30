@@ -52,7 +52,7 @@ in
     Selected
 ```
 
-`<COLUMN_LIST_M>` is a comma-separated list of double-quoted canonical names, e.g. `"Department", "Current Headcount", "Planned Headcount"`.
+`<COLUMN_LIST_M>` is a comma-separated list of double-quoted user-mapped column names, e.g. `"<col_a>", "<col_b>", "<col_c>"` populated from the parse-first scan and the user's Column Aliases.
 
 ## 2. Python — Pandas
 
@@ -135,7 +135,7 @@ extracted_data <- read_excel(path = file_path, sheet = target_sheet) %>%
 glimpse(extracted_data)
 ```
 
-`<COLUMN_LIST_R>` is a comma-separated list of bare canonical names; wrap any name containing spaces in backticks (e.g. `` `Current Headcount` ``).
+`<COLUMN_LIST_R>` is a comma-separated list of bare user-mapped column names; wrap any name containing spaces or special characters in backticks (e.g. `` `<col with space>` ``).
 
 ## 5. Office Scripts (TypeScript)
 
@@ -225,7 +225,7 @@ Sub ExtractColumnsDynamically()
 End Sub
 ```
 
-`<COLUMN_LIST_VBA>` is a comma-separated list of double-quoted canonical names, e.g. `"Department", "Current Headcount"`.
+`<COLUMN_LIST_VBA>` is a comma-separated list of double-quoted user-mapped column names, e.g. `"<col_a>", "<col_b>"` populated from the parse-first scan.
 
 ## Anti-Patterns the GPT Must Refuse to Emit
 

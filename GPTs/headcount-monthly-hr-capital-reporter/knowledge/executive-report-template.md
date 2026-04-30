@@ -1,9 +1,9 @@
 # Executive Monthly Headcount Report — Canonical Template
 
-**Template version:** 2.0 (department-level schema)
-**Locked sections:** 4 (Executive Summary, Department Snapshot, Hiring & Attrition Analysis, Budget & Anomalies)
+**Template version:** 3.0 (concept-keyed, schema-agnostic)
+**Locked sections:** 4 (Executive Summary, Entity Snapshot, Inflow & Rate Analysis, Spend & Anomalies)
 
-This template is the contract between the reporter GPT and its executive consumers. Do not reorder, rename, or skip sections — period-over-period comparability depends on strict template adherence.
+This template is the contract between the reporter GPT and its executive consumers. Do not reorder, rename, or skip sections — period-over-period comparability depends on strict template adherence. Concrete column names are not baked in; the template renders the **user-mapped column** for each analytical concept (see `analytical-formulas.md` for concept names).
 
 ---
 
@@ -12,108 +12,104 @@ This template is the contract between the reporter GPT and its executive consume
 ```
 # Monthly Executive Headcount Report — {Month YYYY}
 *Reporting period: {YYYY-MM-01} to {YYYY-MM-DD}. Prior period: {YYYY-MM-01} to {YYYY-MM-DD}.*
-*Prepared by: {Prepared by} on {Date Prepared} • Approved by: {Approved by} on {Date Approved}*
 ```
 
 If snapshot-only (no prior file), append `*[Snapshot only — no prior-period comparison]*` under the title.
-
-If unsigned-off, prepend the report with:
-```
-> ⚠️ DRAFT — file not approved. Do not circulate as authoritative.
-```
 
 ---
 
 ## Section 1 — Executive Summary
 
-Produces 5-6 bullets. Format exactly as below.
+Produces 5-6 bullets, conditioned on which concepts the user mapped. Skip a bullet whose concepts are not mapped.
 
 ```
 ## 1. Executive Summary
 
-- Total current headcount: **{N}** (planned: {N_planned}, gap: **{+/-N (+/-P%)}**)
-- Net new hires this period: **{N_hires}** (prior: {N_hires_prior}, delta: {+/-N (+/-P%)})
-- Weighted-average attrition rate: **{P}%** (prior: {P_prior}%, delta: {+/-Pp pp})
-- Total compensation cost: **${C}** vs total budget **${B}** (burn: {P_burn}%)
+- Total `actual_count`: **{N}** (`plan_target`: {N_planned}, gap: **{+/-N (+/-P%)}**)   ← if actual_count + plan_target mapped
+- Net `inflow_count` this period: **{N_in}** (prior: {N_in_prior}, delta: {+/-N (+/-P%)})   ← if inflow_count mapped
+- Weighted-average `attrition_rate`: **{P}%** (prior: {P_prior}%, delta: {+/-Pp pp})   ← if attrition_rate mapped
+- Total `comp_spend`: **${C}** vs total `budget` **${B}** (burn: {P_burn}%)   ← if comp_spend + budget mapped
 - Top anomaly: {short description, severity, see §4 reference}
-- Composite-risk departments (risk_score ≥ 3): {comma-separated list, or "None"}
+- Composite-risk entities (P12 risk_score ≥ 3): {comma-separated list, or "None"}
 ```
 
-Weighted-average attrition = `sum(Current Headcount × Attrition Rate) / sum(Current Headcount)`.
+Weighted-average rate (P11 input): `sum(actual_count × rate) / sum(actual_count)`.
 `pp` = percentage points, used for rate-on-rate deltas.
 
 ---
 
-## Section 2 — Department Snapshot
+## Section 2 — Entity Snapshot
 
-One required table containing every department.
+One required table covering every entity. Column headers in the table render the user-mapped column name with the concept noted in parentheses.
 
 ```
-## 2. Department Snapshot
+## 2. Entity Snapshot
 
-| Department | Current | Planned | Gap | New Hires | Attrition | Total Comp | Budget | Burn |
+| {entity_id col} | {actual_count col} | {plan_target col} | Gap | {inflow_count col} | {attrition_rate col} | {comp_spend col} | {budget col} | Burn |
 |---|---|---|---|---|---|---|---|---|
-| {Dept 1} | {N} | {N_planned} | {+/-N} | {N_hires} | {P}% | ${C} | ${B} | {P_burn}% |
-| {Dept 2} | ... | ... | ... | ... | ... | ... | ... | ... |
+| {Entity 1} | {N} | {N_planned} | {+/-N} | {N_in} | {P}% | ${C} | ${B} | {P_burn}% |
+| {Entity 2} | ... | ... | ... | ... | ... | ... | ... | ... |
 | ... | | | | | | | | |
-| **Total** | **{N}** | **{N_planned}** | **{+/-N}** | **{N_hires}** | **{P_wavg}%** | **${C}** | **${B}** | **{P_burn}%** |
+| **Total** | **{N}** | **{N_planned}** | **{+/-N}** | **{N_in}** | **{P_wavg}%** | **${C}** | **${B}** | **{P_burn}%** |
 ```
 
-Sort by absolute hiring gap descending (largest under-hire first). Display all departments — do not bucket into "Other" since the row count is typically manageable (≤20 departments). For very wide rows, allow horizontal scroll in the rendered output.
+Columns whose concept is not mapped are omitted from the table — never rendered as `N/A`. Sort by absolute Plan Gap (P2) descending. Display all entities — do not bucket into "Other" since row counts at this aggregation are usually manageable. For wide rows, allow horizontal scroll.
 
-For any department with `Current Headcount < 5`, replace `Total Comp` and `Burn` with `*` and add a footnote `* Suppressed (n<5) for privacy.`
+For any entity with `actual_count < 5`, replace any spend-derived column (`comp_spend`, Burn, per-capita) with `*` and add a footnote `* Suppressed (n<5) for privacy.` per `compliance-pii-guardrails.md`.
 
 ---
 
-## Section 3 — Hiring & Attrition Analysis
+## Section 3 — Inflow & Rate Analysis
 
-Three subsections.
+Three subsections. Skip a subsection whose required concepts are not mapped.
 
 ```
-## 3. Hiring & Attrition Analysis
+## 3. Inflow & Rate Analysis
 
-### 3.1 Top Hiring Gaps (largest under-hire first)
-| Department | Gap | % of Plan | Hiring Timeline | Pacing |
+### 3.1 Top Plan Gaps (largest negative gap first)
+| {entity_id col} | Gap | % of Plan | {timeline col} | Pacing |
 |---|---|---|---|---|
-| {Dept} | -{N} | -{P}% | {Q-window} | {On track / Behind / Ahead} |
+| {Entity} | -{N} | -{P}% | {window} | {On track / Behind / Ahead} |
 | ... | | | | |
 
-### 3.2 Attrition Concentration (top 5 by rate, depts with ≥5 headcount)
-| Department | Attrition | Z-score | Expected Departures | New Hires | Net |
+### 3.2 Rate Concentration (top 5 by rate, entities with `actual_count ≥ 5`)
+| {entity_id col} | {attrition_rate col} | Z-score | Expected Departures (P7) | {inflow_count col} | Net (P4) |
 |---|---|---|---|---|---|
-| {Dept} | {P}% | {z} | {N_dep} | {N_hires} | {+/-N} |
+| {Entity} | {P}% | {z} | {N_dep} | {N_in} | {+/-N} |
 | ... | | | | | |
 
 ### 3.3 Plan Re-baselining (period-over-period, if prior file provided)
-| Department | Planned (prior) | Planned (current) | Δ | Trigger |
+| {entity_id col} | {plan_target} (prior) | {plan_target} (current) | Δ | Trigger |
 |---|---|---|---|---|
-| {Dept} | {N_prior} | {N_now} | {+/-N (+/-P%)} | {[INFO] / blank} |
+| {Entity} | {N_prior} | {N_now} | {+/-N (+/-P%)} | {[INFO] / blank} |
 ```
 
-If no prior file is provided, replace 3.3 with: `Plan re-baselining: not applicable (no prior period file provided).`
+If no prior file: replace 3.3 with `Plan re-baselining: not applicable (no prior period file provided).`
+If `timeline` is not mapped, omit the Pacing column from 3.1.
+If `attrition_rate` is not mapped, omit subsection 3.2.
 
 ---
 
-## Section 4 — Budget & Anomalies
+## Section 4 — Spend & Anomalies
 
-Two subsections.
+Two subsections. Skip 4.1 if `comp_spend` and `budget` are not both mapped.
 
 ```
-## 4. Budget & Anomalies
+## 4. Spend & Anomalies
 
-### 4.1 Budget Burn (departments outside the 70-105% band)
-| Department | Comp Cost | Budget | Burn | Status |
+### 4.1 Burn (entities outside the 70–105% band)
+| {entity_id col} | {comp_spend col} | {budget col} | Burn | Status |
 |---|---|---|---|---|
-| {Dept} | ${C} | ${B} | {P}% | {[CRITICAL] over / [WARN] slack} |
+| {Entity} | ${C} | ${B} | {P}% | {[CRITICAL] over / [WARN] slack} |
 | ... | | | | |
 
-If all departments are within the 70-105% band: write `All departments within target burn range (70-105%).`
+If all entities are within the 70–105% band: write `All entities within target burn range (70–105%).`
 
 ### 4.2 Anomalies
 1. **[CRITICAL] Rule N.N — {short description}**
-   - Department: {Dept}
-   - Evidence: {trigger metric}
-   - Recommended action: {what HR Ops or Finance should do}
+   - Entity: {Entity}
+   - Evidence: {trigger metric, citing pattern P1–P12}
+   - Recommended action: {what the relevant function should do}
 
 2. **[WARN] Rule N.N — {short description}**
    ...
@@ -122,7 +118,7 @@ If all departments are within the 70-105% band: write `All departments within ta
    ...
 ```
 
-If no anomalies above WARN are detected: write `No anomalies above the WARN threshold this period.`
+If no anomalies above WARN are detected: `No anomalies above the WARN threshold this period.`
 
 If a `[CRITICAL]` anomaly fires, prepend the entire report with:
 ```
@@ -137,12 +133,13 @@ If a `[CRITICAL]` anomaly fires, prepend the entire report with:
 ---
 **Files used:**
 - Current period: `{filename_current}` ({N_rows_current} rows, period: {YYYY-MM})
-  - Prepared by: {Prepared by_current} • Approved by: {Approved by_current}
 - Prior period: `{filename_prior}` ({N_rows_prior} rows, period: {YYYY-MM})
-  - Prepared by: {Prepared by_prior} • Approved by: {Approved by_prior}
+- Concept map applied: {compact JSON of alias_map → user columns}
+- References recomputed: {comma-separated list, or "None"}
+- ORG-Chart: {supplied / not supplied}
 
 **Report generated:** {YYYY-MM-DD}
-**Template version:** 2.0
+**Template version:** 3.0
 ```
 
 ---
@@ -156,8 +153,8 @@ If a `[CRITICAL]` anomaly fires, prepend the entire report with:
 - Currency delta: `+$50,000 (+1.2%)`.
 
 ### Number rounding
-- Headcount and integer counts: whole numbers.
-- Currency: nearest dollar with thousands separators (`$1,200,000`).
+- Counts: whole numbers.
+- Currency: nearest unit with thousands separators (`$1,200,000`).
 - Percentages: one decimal (`12.0%`).
 - Z-scores: two decimals.
 
@@ -172,4 +169,4 @@ If a `[CRITICAL]` anomaly fires, prepend the entire report with:
 
 ## Versioning
 
-Template changes are versioned. v1.0 was for the row-per-employee schema; v2.0 (this template) is for the row-per-department schema. Treat schema-driven template changes as a one-time migration with a clear cut-over date — do not re-render historical reports under the new template unless the underlying data has been re-aggregated.
+Template changes are versioned. v3.0 (this template) is concept-keyed and schema-agnostic — every column header in the rendered output is the user-mapped column name resolved via Column Aliases at runtime. Treat schema-driven template changes as a one-time migration with a clear cut-over date — do not re-render historical reports under the new template unless the underlying mapping is re-applied.

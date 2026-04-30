@@ -1,102 +1,113 @@
-# Anomaly Detection Rules — Department-Level Headcount
+# Anomaly Detection Rules — Concept-Based
 
-Apply every rule in this document during the anomaly detection pass. Each rule has a severity tag: `[CRITICAL]`, `[WARN]`, or `[INFO]`. The schema is row-per-department, so individual-employee anomalies (ghost employees, contractor compliance) do not apply at this aggregation — those require the underlying employee file.
+Apply every rule in this document during the anomaly detection pass. Each rule has a severity tag: `[CRITICAL]`, `[WARN]`, or `[INFO]`. Like `analytical-formulas.md`, this file is keyed to **concepts**, not specific column names. Rules that depend on a concept the user did not map are silently skipped — never executed against guessed columns.
 
-## Category 1 — Governance Anomalies
+The schema is row-per-entity (the user's `entity_id` concept), so individual-record anomalies (ghost employees, contractor compliance) do not apply at this aggregation — those require an underlying record-level file.
 
-### Rule 1.1 — Unsigned-off file `[CRITICAL]`
-- Detect: `Date Approved` is missing OR `Date Approved < Date Prepared`.
-- Action: halt; refuse to publish executive output until approval is recorded.
+## Category 1 — Plan-vs-Actual Anomalies
 
-### Rule 1.2 — Stale file `[WARN]`
-- Detect: `Date Approved` is more than 35 days before today.
-- Action: flag and ask the user whether a fresher file is available before proceeding.
+### Rule 1.1 — Material under-attainment `[WARN]`
+- **Concepts required:** `actual_count`, `plan_target`, optionally `timeline`
+- **Detect:** `gap > 0.25 × plan_target` (per P2) AND, if `timeline` is supplied, the timeline end-period has passed.
+- **Action:** flag entity; report gap as both absolute and percentage of plan.
 
-## Category 2 — Plan-vs-Actual Anomalies
+### Rule 1.2 — Over-attainment beyond plan `[WARN]`
+- **Concepts required:** `actual_count`, `plan_target`
+- **Detect:** `actual_count > plan_target × 1.10`.
+- **Action:** flag for plan revision or cost review; cross-check `budget` if mapped.
 
-### Rule 2.1 — Material under-hiring `[WARN]`
-- Detect: `hiring_gap_dept > 0.25 × Planned Headcount` AND `Hiring Timeline` end-quarter has passed.
-- Action: flag department; report gap as both absolute and percentage of plan.
+### Rule 1.3 — Plan re-baselining `[INFO]`
+- **Concepts required:** `plan_target` (current period and prior period)
+- **Detect:** `|plan_target_now − plan_target_prior| > 0.10 × plan_target_prior` for any entity.
+- **Action:** flag as plan revision; note absolute and percentage change.
 
-### Rule 2.2 — Over-hiring beyond plan `[WARN]`
-- Detect: `Current Headcount > Planned Headcount × 1.10`.
-- Action: flag for plan revision or cost review; cross-check `Budget Allocation`.
+### Rule 1.4 — Pacing slip `[WARN]`
+- **Concepts required:** `actual_count`, `plan_target`, `inflow_count`, `timeline`
+- **Detect:** `pacing_gap_pp < -0.20` (behind schedule by more than 20 percentage points, per P8).
+- **Action:** flag; report which periods of the timeline have elapsed and how much inflow has occurred.
 
-### Rule 2.3 — Plan re-baselining `[INFO]`
-- Detect (period-over-period): `|Planned_now - Planned_prior| > 0.10 × Planned_prior` for any department.
-- Action: flag as plan revision; note absolute and percentage change.
+## Category 2 — Spend & Budget Anomalies
 
-### Rule 2.4 — Hiring pacing slip `[WARN]`
-- Detect: `pacing_gap < -0.20` (behind schedule by more than 20 percentage points).
-- Action: flag; report which quarters of the timeline have elapsed and how much hiring has occurred.
+### Rule 2.1 — Budget overrun `[CRITICAL]`
+- **Concepts required:** `comp_spend`, `budget`
+- **Detect:** `burn > 1.05` (P6).
+- **Action:** flag for finance review; cite absolute overrun.
 
-## Category 3 — Compensation & Budget Anomalies
+### Rule 2.2 — Material budget slack `[WARN]`
+- **Concepts required:** `comp_spend`, `budget`, `inflow_count`
+- **Detect:** `burn < 0.70` AND `inflow_count == 0` for the period.
+- **Action:** flag as under-utilized budget; investigate freeze or scope change.
 
-### Rule 3.1 — Budget overrun `[CRITICAL]`
-- Detect: `budget_burn_dept > 1.05` (department is more than 5% over budget).
-- Action: flag for finance review; cite absolute overrun in dollars.
+### Rule 2.3 — Per-capita spend outlier `[INFO]`
+- **Concepts required:** `comp_spend`, `actual_count`
+- **Detect:** `|z_score(per_capita)| > 2.0` across entities (P5 + P11).
+- **Action:** surface as informational; do not auto-flag — per-capita varies legitimately by role mix.
 
-### Rule 3.2 — Material budget slack `[WARN]`
-- Detect: `budget_burn_dept < 0.70` AND `New Hires == 0` for the period.
-- Action: flag as under-utilized budget; investigate hiring freeze or scope change.
+### Rule 2.4 — Spend share / count share divergence `[WARN]`
+- **Concepts required:** `comp_spend`, `actual_count`
+- **Detect:** `|spend_share − count_share| > 5pp` for an entity, where `spend_share = comp_spend_i / sum(comp_spend)` and `count_share = actual_count_i / sum(actual_count)` (P9 applied to both concepts), AND `role_descriptors` (if mapped) does not obviously justify the divergence.
+- **Action:** flag for review.
 
-### Rule 3.3 — Comp-per-head outlier `[INFO]`
-- Detect: `|z_score(comp_per_head_dept across departments)| > 2.0`.
-- Action: surface as informational; do not auto-flag — comp varies legitimately by role mix.
+### Rule 2.5 — Zero spend with non-zero count `[CRITICAL]`
+- **Concepts required:** `comp_spend`, `actual_count`
+- **Detect:** `comp_spend == 0` AND `actual_count > 0`.
+- **Action:** flag as data error; halt entity's downstream metrics.
 
-### Rule 3.4 — Comp share / headcount share divergence `[WARN]`
-- Detect: `|comp_share_dept - headcount_share_dept| > 5 pp` AND department's `Role/Position Titles` do not obviously justify the divergence (e.g., engineering, legal, finance commonly carry higher comp).
-- Action: flag for review.
+## Category 3 — Rate Anomalies
 
-### Rule 3.5 — Zero comp with non-zero headcount `[CRITICAL]`
-- Detect: `Total Compensation Costs == 0` AND `Current Headcount > 0`.
-- Action: flag as data error; halt department's downstream metrics.
+### Rule 3.1 — Critical rate `[CRITICAL]`
+- **Concepts required:** any `rate` concept (e.g., `attrition_rate`)
+- **Detect:** `rate > 0.20` for any entity with `actual_count >= 5`.
+- **Action:** flag as crisis-level; cross-reference inflows to assess whether they offset outflows.
 
-## Category 4 — Attrition Anomalies
+### Rule 3.2 — High rate warning `[WARN]`
+- **Concepts required:** any `rate` concept, optionally `role_descriptors`
+- **Detect:** `rate > 0.12` AND (if mapped) the entity's role mix indicates business-critical functions.
+- **Action:** flag with business-impact framing.
 
-### Rule 4.1 — Critical attrition rate `[CRITICAL]`
-- Detect: `Attrition Rate > 0.20` (20%+) for any department with `Current Headcount >= 5`.
-- Action: flag as retention crisis; cross-reference with `New Hires` to assess whether hiring offsets departures.
+### Rule 3.3 — Rate Z-score outlier `[WARN]`
+- **Concepts required:** any `rate` concept across entities
+- **Detect:** `z_score(rate) > 2.0` (P11) across entities in the same period.
+- **Action:** flag the outlier; recommend root-cause analysis.
 
-### Rule 4.2 — High attrition warning `[WARN]`
-- Detect: `Attrition Rate > 0.12` AND department's role mix indicates revenue-generating or platform-critical functions (Sales, Engineering, Operations).
-- Action: flag with business-impact framing.
+### Rule 3.4 — Rate + under-attainment combo `[CRITICAL]`
+- **Concepts required:** `attrition_rate`, `actual_count`, `plan_target`, `inflow_count`
+- **Detect:** `attrition_rate > 0.10` AND `gap > 0.20 × plan_target` (P2) AND `inflow_count < expected_departures` (P4).
+- **Action:** flag as compounding capacity loss; the entity is shrinking on a net basis while behind plan.
 
-### Rule 4.3 — Attrition Z-score outlier `[WARN]`
-- Detect: `z_score(Attrition Rate) > 2.0` across departments in the same period.
-- Action: flag the outlier department; recommend root-cause analysis.
+## Category 4 — Data Quality Anomalies
 
-### Rule 4.4 — Attrition + under-hiring combo `[CRITICAL]`
-- Detect: `Attrition Rate > 0.10` AND `hiring_gap_dept > 0.20 × Planned Headcount` AND `New Hires < expected_departures_dept`.
-- Action: flag as compounding capacity loss; the department is shrinking on a net basis while behind plan.
+### Rule 4.1 — Negative or non-integer count `[CRITICAL]`
+- **Concepts required:** any `count` concept
+- **Detect:** value is negative or non-integer.
+- **Action:** halt; request file correction.
 
-## Category 5 — Data Quality Anomalies
+### Rule 4.2 — Rate out of range `[CRITICAL]`
+- **Concepts required:** any `rate` concept
+- **Detect:** `rate < 0` OR `rate > 1.0` after normalization.
+- **Action:** halt; flag as data error.
 
-### Rule 5.1 — Negative or non-integer headcount `[CRITICAL]`
-- Detect: `Current Headcount`, `Planned Headcount`, or `New Hires` is negative or non-integer.
-- Action: halt; request file correction.
+### Rule 4.3 — Entity-name drift `[WARN]`
+- **Concepts required:** `entity_id`, current and prior period
+- **Detect (period-over-period):** an entity appears in current period but not prior, or vice versa, when the org map is otherwise unchanged.
+- **Action:** flag possible rename; ask the user to confirm before treating as new/closed entity.
 
-### Rule 5.2 — Attrition rate out of range `[CRITICAL]`
-- Detect: `Attrition Rate < 0` OR `Attrition Rate > 1.0` after normalization.
-- Action: halt; flag as data error.
+### Rule 4.4 — Total swing > ±25% MoM `[CRITICAL]`
+- **Concepts required:** any aggregable concept, current and prior period
+- **Detect:** `|delta_pct| > 25%` on the org-total of the concept (P10).
+- **Action:** halt automated reporting; require human verification before publishing.
 
-### Rule 5.3 — Department name drift `[WARN]`
-- Detect (period-over-period): a department appears in current period but not prior, or vice versa, when the org map is otherwise unchanged.
-- Action: flag possible rename; ask the user to confirm before treating as new/closed department.
+### Rule 4.5 — Malformed timeline `[INFO]`
+- **Concepts required:** `timeline`
+- **Detect:** timeline string cannot be parsed to start/end periods.
+- **Action:** flag with the raw value; skip pacing analysis (Rule 1.4) for that entity.
 
-### Rule 5.4 — Total org headcount swing > ±25% MoM `[CRITICAL]`
-- Detect: `|delta_total_current_pct| > 25%`.
-- Action: halt automated reporting; require human verification before publishing.
+## Category 5 — Composite Risk
 
-### Rule 5.5 — Malformed `Hiring Timeline` `[INFO]`
-- Detect: timeline string cannot be parsed to start/end quarters.
-- Action: flag with the raw value; skip pacing analysis for that department.
-
-## Category 6 — Composite Risk
-
-### Rule 6.1 — Composite-risk department `[WARN]`
-- Detect: `risk_score >= 3` per the formula in `analytical-formulas.md` (combines under-hire, attrition, budget overrun, pacing slip).
-- Action: flag for executive review with the underlying contributing factors.
+### Rule 5.1 — Composite-risk entity `[WARN]`
+- **Concepts required:** any inputs feeding P12
+- **Detect:** `risk_score >= 3` per the composite-risk pattern P12 in `analytical-formulas.md`.
+- **Action:** flag for executive review with the underlying contributing factors.
 
 ## Output Format for Flagged Anomalies
 
@@ -104,9 +115,9 @@ Every flagged anomaly must follow this format:
 
 ```
 [SEVERITY] Rule N.N — <one-line description>
-  Department: <Department name(s)>
-  Evidence: <metric or comparison that triggered the rule>
-  Recommended action: <what HR Ops or Finance should do>
+  Entity: <entity name(s) from the user's `entity_id` column>
+  Evidence: <metric or comparison that triggered the rule, citing the pattern name (P1–P12)>
+  Recommended action: <what the relevant function should do>
 ```
 
-Display department names directly — they are not PII. Aggregate further only when the dataset includes very small departments (see `compliance-pii-guardrails.md` rule on small-cell suppression).
+Display entity names directly — they are not PII at the row-per-entity aggregation. Aggregate further only when the dataset includes very small entities (see `compliance-pii-guardrails.md` rule on small-cell suppression).
