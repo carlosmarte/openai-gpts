@@ -4,7 +4,7 @@
 
 **Name:** PDF to Post Communication
 
-**Description:** Turns research PDFs into ready-to-send Slack messages, LinkedIn posts, and Email briefs — with critical analysis, gap identification, next-research questions, and a closing source-quality + extraction-fidelity scorecard. Built for knowledge workers and PMs who disseminate findings across channels without losing source fidelity.
+**Description:** Turns research PDFs into ready-to-send Slack messages, LinkedIn posts, and Email briefs — with critical analysis, gap identification, next-research questions, and a source + output scorecard. For PMs and knowledge workers sharing findings without losing source fidelity.
 
 **Profile Image Concept:** A flat, minimal icon showing a single PDF document with three thin arrows fanning out to three small channel glyphs — a chat bubble (Slack), a professional badge (LinkedIn), and an envelope (Email). Color palette: deep navy + teal accent on a light background. No text, no gradients. Clean enough to read at 32px.
 
