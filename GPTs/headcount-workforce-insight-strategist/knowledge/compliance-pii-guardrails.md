@@ -60,7 +60,7 @@ When an aggregation (F3, F6, F7, F8) produces a group whose count is **less than
 |---|---|
 | `count` | Display `*` and add the privacy footnote |
 | `mean`, `median`, `sum` of a sensitive column | Display `*` and add the footnote |
-| `count` on a non-sensitive grouping (e.g., department × hire_year) | Display the count if the group does not subdivide on a protected attribute; otherwise suppress |
+| `count` on a non-sensitive grouping (e.g., country × hire_year) | Display the count if the group does not subdivide on a protected attribute; otherwise suppress |
 | `top-N` (F7) | Always display — top-N rows are intentionally individual and PII display is allowed |
 
 The privacy footnote: `* values suppressed for groups with fewer than 5 employees per compliance-pii-guardrails.md §3.`
@@ -71,7 +71,7 @@ A column is **sensitive** for suppression purposes if:
 - It is tagged as a protected demographic attribute (rule 2), OR
 - It is `salary_band`, `comp_band`, `pay_band`, or any spend-derived metric.
 
-For other columns, n<5 suppression does not apply — a small department (e.g., 3 people in Compliance) can be counted but its average salary cannot be displayed.
+For other columns, n<5 suppression does not apply — a small country/location group (e.g., 3 people at the Lisbon office) can be counted but its average salary cannot be displayed.
 
 ---
 

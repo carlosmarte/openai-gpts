@@ -22,7 +22,6 @@ Each row defines a **canonical name** (used in Logic blocks), a list of **aliase
 | `email` | `work_email`, `corp_email`, `email_address` | `^(work[_ ]?\|corp[_ ]?)?email([_ ]?address)?$` | string | PII |
 | `manager_id` | `mgr_id`, `manager_employee_id`, `supervisor_id`, `ReportsTo` | `^(manager\|mgr\|supervisor\|reports[_ ]?to)[_ ]?(id\|emp[_ ]?id)?$` | string | FK to `employee_id`; used by `ORG-chart.md` for hierarchy |
 | `manager_level` | `mgr_level`, `mgmt_level`, `level`, `band` | `^(manager\|mgr\|management\|mgmt\|level\|band)$` | string | M0…Mn; computed via `ORG-chart.md` if absent |
-| `department` | `dept`, `org`, `function`, `team` | `^(department\|dept\|org\|function\|team)$` | string | Org grouping |
 | `region` | `geo`, `geography`, `location_region` | `^(region\|geo\|geography)$` | string | EMEA / AMER / APAC |
 | `country` | `nation`, `location_country` | `^(country\|nation)$` | string | ISO-3166 preferred |
 | `location` | `office`, `site`, `work_location` | `^(location\|office\|site\|work[_ ]?location)$` | string | City or office |

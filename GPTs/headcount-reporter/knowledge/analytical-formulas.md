@@ -48,7 +48,7 @@ matched[projection]
 ```python
 matched.shape[0]                                  # count
 matched.tenure_years.mean()                       # mean
-matched.groupby('department').size()              # count by group
+matched.groupby('country').size()                 # count by group
 matched.groupby('region').tenure_years.median()   # median by group
 ```
 
@@ -137,7 +137,7 @@ roll_up = {p.employee_id: under(p.employee_id, df).shape[0] for _, p in parents.
 **Pandas idiom:**
 ```python
 matched.nlargest(10, 'tenure_years')
-matched.groupby('department').size().nlargest(5)
+matched.groupby('country').size().nlargest(5)
 ```
 
 **Notes:** Spot-check is capped at 10. If the user explicitly asks for more, surface the full count + a refinement suggestion ("This returns 47 rows — want me to narrow further?").
@@ -146,14 +146,14 @@ matched.groupby('department').size().nlargest(5)
 
 ## F8 — Cross-Tab (group-by × group-by)
 
-**Purpose:** Two-dimensional aggregation — e.g., "headcount by region × department".
+**Purpose:** Two-dimensional aggregation — e.g., "headcount by country × location".
 
 **Inputs:** filtered DataFrame; two group-by columns; aggregation function.
 
 **Pandas idiom:**
 ```python
-pd.crosstab(matched.region, matched.department)
-matched.pivot_table(index='region', columns='department', values='employee_id', aggfunc='count')
+pd.crosstab(matched.country, matched.location)
+matched.pivot_table(index='country', columns='location', values='employee_id', aggfunc='count')
 ```
 
 **Notes:** F8 is the heaviest output — render only when the question explicitly asks for two dimensions. Otherwise prefer F3 (single group-by). Suppress any cell where n<5 per `compliance-pii-guardrails.md` if the cross-tab targets a demographic dimension.
@@ -167,8 +167,8 @@ matched.pivot_table(index='region', columns='department', values='employee_id', 
 | "Show me X" (filter only) | F1 + F2 |
 | "Count of X" | F1 + F3 |
 | "Top N by Y" | F1 + F7 |
-| "X by department" | F1 + F3 (group-by) |
-| "X by region × department" | F1 + F8 |
+| "X by country" | F1 + F3 (group-by) |
+| "X by country × location" | F1 + F8 |
 | "Everyone under VP Y" | F4 (subtree) + F2 |
 | "Managers at level ≥ M3" | F4 (level inheritance) + F1 + F2 |
 | "Hires in Q1 2026" | F1 + F5 |

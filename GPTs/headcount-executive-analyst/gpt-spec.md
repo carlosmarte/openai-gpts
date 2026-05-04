@@ -45,11 +45,11 @@ Behind both modes sits a **Parse-First Metadata Scan** (`openpyxl read_only=True
 
 1. "Show me everyone in EMEA hired since 2024-01-01."
 2. "List all managers at level ≥ M3 with span > 7 reports."
-3. "Filter to engineering org only — group by department, count of employees."
+3. "Group all UK employees by location — show counts."
 4. "Headcount by region for hire_date in Q1 2026."
-5. "Top 10 by tenure in Tech department."
+5. "Top 10 by tenure at the London office."
 6. "Export the EMEA-tenure-over-5y filter as Pandas."
-7. "Give me the DuckDB SQL for hire_date BETWEEN '2025-01-01' AND '2025-12-31' grouped by department."
+7. "Give me the DuckDB SQL for hire_date BETWEEN '2025-01-01' AND '2025-12-31' grouped by country."
 
 ## Knowledge Files
 

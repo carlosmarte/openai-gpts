@@ -43,8 +43,8 @@ Behind both modes sits a **Parse-First Metadata Scan** (`openpyxl read_only=True
 
 1. "Show me everyone in EMEA hired since 2024-01-01 — what's the strategic story?"
 2. "Top 10 managers by span of control — and what does that say about layer health?"
-3. "Filter to engineering only, group by tenure bucket, and tell me where the capacity risk is."
-4. "Q1 2026 hires by department — concentration risk?"
+3. "Filter to UK only, group by tenure bucket, and tell me where the capacity risk is."
+4. "Q1 2026 hires by country — concentration risk?"
 5. "Where is attrition compounding with under-hiring? Pull the matched cohort and the implication."
 6. "Export the EMEA-Q1-Tech filter as Pandas."
 7. "Give me the DuckDB SQL that produces the same filter for a 250k-row file."

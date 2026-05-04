@@ -101,7 +101,7 @@ Once preconditions are satisfied:
 > | `region` | `== 'EMEA'` | "EMEA" |
 > | `hire_date` | `>= '2026-01-01' AND < '2026-04-01'` | "Q1 2026" → Jan–Mar 2026 |
 >
-> **Aggregations (group by `department`):** Tech 142, Sales 71, Ops 74.
+> **Aggregations (group by `country`):** UK 142, DE 71, IE 74.
 >
 > **Insight (so what?):**
-> EMEA Q1 hiring is **49% concentrated in Tech (142 of 287)** — twice the global Tech share (≈24%). If the platform-rebuild ramp slips one quarter, EMEA Tech absorbs the bulk of the capacity exposure. Recommended decision: pre-stage Tech onboarding capacity in EMEA Q2 plan rather than spreading evenly. (Pattern N1: concentration risk.)
+> EMEA Q1 hiring is **49% concentrated in UK (142 of 287)** — twice the EMEA UK share (≈24%) of total headcount. If the London office capacity slips, the UK absorbs the bulk of the EMEA Q1 onboarding load. Recommended decision: pre-stage UK onboarding capacity in EMEA Q2 plan rather than spreading evenly across the region. (Pattern N1: concentration risk.)

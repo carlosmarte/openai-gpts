@@ -50,18 +50,18 @@ Matched 287 of 4,318 rows.
 
 ## Shape R3 — Group-By Summary
 
-**Sample prompt:** "Headcount by department for EMEA Q1 hires."
+**Sample prompt:** "Headcount by country for EMEA Q1 hires."
 
 **F-chain:** F1 + F3 (group-by)
 
 **Output shape:** two-column table (group, aggregate).
 
 ```
-| department  | headcount |
-|-------------|-----------|
-| Engineering | 142       |
-| Sales       | 71        |
-| Operations  | 74        |
+| country | headcount |
+|---------|-----------|
+| UK      | 142       |
+| DE      | 71        |
+| IE      | 74        |
 ```
 
 **Notes:** The most common executive-report shape. Emitted code uses `df.groupby(col).size()` (Pandas), `Table.Group(...)` (M), or `GROUP BY` (SQL).
@@ -70,18 +70,19 @@ Matched 287 of 4,318 rows.
 
 ## Shape R4 — Cross-Tab / Pivot
 
-**Sample prompt:** "Headcount by region × department for Q1 2026 hires."
+**Sample prompt:** "Headcount by country × location for Q1 2026 hires."
 
 **F-chain:** F1 + F8 (cross-tab)
 
 **Output shape:** two-dimensional matrix.
 
 ```
-| region | Engineering | Sales | Operations |
-|--------|-------------|-------|------------|
-| EMEA   | 142         | 71    | 74         |
-| AMER   | 218         | 95    | 88         |
-| APAC   | 81          | 42    | 35         |
+| country | London | Dublin | Berlin | Lisbon |
+|---------|--------|--------|--------|--------|
+| UK      | 142    | 0      | 0      | 0      |
+| IE      | 0      | 71     | 0      | 0      |
+| DE      | 0      | 0      | 35     | 0      |
+| PT      | 0      | 0      | 0      | 12     |
 ```
 
 **Notes:** Heaviest output shape — only emitted when the user explicitly asks for two dimensions. The emitted Pandas uses `pd.crosstab()` or `pivot_table(...)`; the M version uses `Table.Pivot`; SQL uses conditional `SUM(CASE WHEN ...)`.
@@ -153,7 +154,7 @@ Matched 287 of 4,318 rows.
 
 ## Composing report shapes
 
-A user prompt can chain shapes — e.g., "Top 5 departments by EMEA Q1 headcount" = R3 (group-by) + R5 (top-N), or "Headcount by region for the last 4 quarters" = R7 (time series) + R3 (group-by).
+A user prompt can chain shapes — e.g., "Top 5 countries by EMEA Q1 headcount" = R3 (group-by) + R5 (top-N), or "Headcount by region for the last 4 quarters" = R7 (time series) + R3 (group-by).
 
 The GPT identifies the shape chain from the question and emits one code block that produces the combined output. The combined shape is documented in the spot-check + Aggregations sub-block before the codegen is requested.
 

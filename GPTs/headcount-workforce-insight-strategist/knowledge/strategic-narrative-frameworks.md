@@ -32,7 +32,7 @@ The strategist does not use a pattern unless the data supports it. If no pattern
 
 **Required metrics:** F4 (resolve `manager_id`-derived hierarchy) + F3 group-by `manager_id` to count direct reports + F3 median span across the layer.
 
-**Implication template:** *"Median manager span is {median}. {N} managers ({pct}%) carry ≥ {2× median} reports — these are the manager-burnout candidates. {M} managers carry ≤ 2 reports — these are layer-redundancy candidates. Layer-health gap concentrates in {department / region}."*
+**Implication template:** *"Median manager span is {median}. {N} managers ({pct}%) carry ≥ {2× median} reports — these are the manager-burnout candidates. {M} managers carry ≤ 2 reports — these are layer-redundancy candidates. Layer-health gap concentrates in {country / location / region}."*
 
 **Anti-patterns:**
 - Pointing at one over-loaded manager without showing the median (no comparison frame).
@@ -42,11 +42,11 @@ The strategist does not use a pattern unless the data supports it. If no pattern
 
 ## N3 — Attrition Concentration
 
-**Trigger:** Departures (rows where `term_date` falls in the queried window) are non-uniformly distributed across a meaningful axis (department, manager, region).
+**Trigger:** Departures (rows where `term_date` falls in the queried window) are non-uniformly distributed across a meaningful axis (country, location, manager, region).
 
 **Required metrics:** F1 (filter `term_date` to the window) + F3 group-by + F3 group-by on full file (baseline). If `term_date` is absent, this pattern cannot fire.
 
-**Implication template:** *"{N} departures in {window} concentrate in {department/region/manager_org}: {sub_count} of {N} ({pct}%) vs {baseline_pct}% of total headcount. {Concentration_factor}× over-representation suggests {hypothesis: retention issue / planned RIF / org redesign}."*
+**Implication template:** *"{N} departures in {window} concentrate in {country/location/manager_org}: {sub_count} of {N} ({pct}%) vs {baseline_pct}% of total headcount. {Concentration_factor}× over-representation suggests {hypothesis: retention issue / planned RIF / org redesign}."*
 
 **Anti-patterns:**
 - Asserting a "retention issue" without ruling out planned reorganizations.
@@ -74,7 +74,7 @@ The strategist does not use a pattern unless the data supports it. If no pattern
 
 **Required metrics:** F1 + F5 (filter to window) + F3 (count where `hire_date` in window) + F3 (count where `term_date` in window). Both must be derivable.
 
-**Implication template:** *"{Window} net capacity change: +{hires} hires - {departures} departures = {net} ({pct}% of starting headcount). At this rate, {department/region} {gains_or_loses} {projected_n} per {period} — {capacity_runway} months until {threshold}."*
+**Implication template:** *"{Window} net capacity change: +{hires} hires - {departures} departures = {net} ({pct}% of starting headcount). At this rate, {country/region} {gains_or_loses} {projected_n} per {period} — {capacity_runway} months until {threshold}."*
 
 **Anti-patterns:**
 - Projecting forward without stating "at this rate" — the math is conditional.
